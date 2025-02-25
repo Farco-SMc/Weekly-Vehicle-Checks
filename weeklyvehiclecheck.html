@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Vehicle Check</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            font-weight: bold;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        button {
+            background: #007BFF;
+            color: white;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Weekly Vehicle Check</h2>
+        <form id="vehicleCheckForm" action="https://script.google.com/macros/s/AKfycbxcGJ0QyeD5V9pb8Sah34eZ-SiRBkBCktO7AQMwCI2csf_1xUfPapu0_aPeAYYaQWDxgQ/exec" method="POST">
+            <div class="form-group">
+                <label for="driverName">Driver Name:</label>
+                <input type="text" id="driverName" name="driverName" required>
+            </div>
+            <div class="form-group">
+                <label for="vehicleReg">Vehicle Registration:</label>
+                <input type="text" id="vehicleReg" name="vehicleReg" required>
+            </div>
+            <div class="form-group">
+                <label for="mileage">Current Mileage:</label>
+                <input type="number" id="mileage" name="mileage" required>
+            </div>
+            <div class="form-group">
+                <label>Tyre Condition:</label>
+                <select name="tyreCondition" required>
+                    <option value="good">Good</option>
+                    <option value="fair">Fair</option>
+                    <option value="poor">Poor</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Lights Functional:</label>
+                <input type="radio" name="lights" value="yes" required> Yes
+                <input type="radio" name="lights" value="no" required> No
+            </div>
+            <div class="form-group">
+                <label for="notes">Additional Notes:</label>
+                <textarea id="notes" name="notes" rows="4"></textarea>
+            </div>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+
+    <script>
+    document.getElementById("vehicleCheckForm").addEventListener("submit", function(event) {
+        event.preventDefault(); // Prevent default form submission
+        var formData = new FormData(this);
+        fetch(this.action, {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.text())
+        .then(data => {
+            alert("Form submitted successfully!");
+            document.getElementById("vehicleCheckForm").reset(); // Reset the form after submission
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("Submission failed. Please try again.");
+        });
+    });
+    </script>
+</body>
+</html>
