@@ -1,99 +1,354 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weekly Vehicle Check</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        .container {
-            max-width: 500px;
-            margin: auto;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        label {
-            font-weight: bold;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        button {
-            background: #007BFF;
-            color: white;
-            padding: 10px;
-            border: none;
-            cursor: pointer;
-            width: 100%;
-            border-radius: 5px;
-        }
-        button:hover {
-            background: #0056b3;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vehicle Checks and Maintenance</title>
+  <style>
+    /* FARCO Brand Styling */
+    body {
+      font-family: "Gill Sans", "Segoe UI", sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+      color: #34434c;
+    }
+    .container {
+      max-width: 600px;
+      background-color: #ffffff;
+      margin: auto;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      font-family: "Begum Semi Bold", "Gill Sans", sans-serif;
+      font-size: 28px;
+      margin-bottom: 20px;
+      text-align: center;
+      color: #34434c;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #a1afae;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    input[type="checkbox"],
+    input[type="radio"] {
+      margin-right: 8px;
+    }
+    button {
+      background-color: #f7941d; /* FARCO Orange */
+      color: #ffffff;
+      padding: 12px;
+      border: none;
+      border-radius: 5px;
+      width: 100%;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #d77c15;
+    }
+    .hidden {
+      display: none;
+    }
+    /* Fluid level radio button grouping */
+    .fluid-group {
+      margin-bottom: 8px;
+    }
+    .fluid-group label {
+      font-weight: normal;
+      margin-right: 10px;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Weekly Vehicle Check</h2>
-        <form id="vehicleCheckForm" action="https://script.google.com/macros/s/AKfycbxcGJ0QyeD5V9pb8Sah34eZ-SiRBkBCktO7AQMwCI2csf_1xUfPapu0_aPeAYYaQWDxgQ/exec" method="POST">
-            <div class="form-group">
-                <label for="driverName">Driver Name:</label>
-                <input type="text" id="driverName" name="driverName" required>
-            </div>
-            <div class="form-group">
-                <label for="vehicleReg">Vehicle Registration:</label>
-                <input type="text" id="vehicleReg" name="vehicleReg" required>
-            </div>
-            <div class="form-group">
-                <label for="mileage">Current Mileage:</label>
-                <input type="number" id="mileage" name="mileage" required>
-            </div>
-            <div class="form-group">
-                <label>Tyre Condition:</label>
-                <select name="tyreCondition" required>
-                    <option value="good">Good</option>
-                    <option value="fair">Fair</option>
-                    <option value="poor">Poor</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Lights Functional:</label>
-                <input type="radio" name="lights" value="yes" required> Yes
-                <input type="radio" name="lights" value="no" required> No
-            </div>
-            <div class="form-group">
-                <label for="notes">Additional Notes:</label>
-                <textarea id="notes" name="notes" rows="4"></textarea>
-            </div>
-            <button type="submit">Submit</button>
-        </form>
-    </div>
+  <div class="container">
+    <h2>Vehicle Checks and Maintenance</h2>
+    <!-- Be sure to update the action URL with your deployed Apps Script URL -->
+    <form id="vehicleForm" action="https://script.google.com/macros/s/AKfycbwbtt4yTC9TFHGcRYWn0UCIW-as2UA21Equ-pkelVU-ZgfeirPB7mahYE-Jkd20qy8nmQ/exec" method="POST" enctype="multipart/form-data">
+      
+      <!-- Check Type -->
+      <div class="form-group">
+        <label for="checkType">Check Type:</label>
+        <select id="checkType" name="checkType" required onchange="toggleFields()">
+          <option value="">Select Check Type...</option>
+          <option value="Daily">Daily Vehicle Check</option>
+          <option value="Weekly">Weekly Vehicle Check</option>
+        </select>
+      </div>
+      
+      <!-- Driver Name -->
+      <div class="form-group">
+        <label for="driverName">Driver Name:</label>
+        <select id="driverName" name="driverName" required onchange="toggleDriverOther()">
+          <option value="">Select Driver Name</option>
+          <option value="Mat Roberts">Mat Roberts</option>
+          <option value="Leo Baptiste">Leo Baptiste</option>
+          <option value="Ed Sykes">Ed Sykes</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group hidden" id="otherDriverNameContainer">
+        <label for="otherDriverName">Please enter driver name:</label>
+        <input type="text" id="otherDriverName" name="otherDriverName" />
+      </div>
+      
+      <!-- Vehicle Registration -->
+      <div class="form-group">
+        <label for="vehicleReg">Vehicle Registration:</label>
+        <select id="vehicleReg" name="vehicleReg" required>
+          <option value="">Select Registration</option>
+          <option value="BV72 JVN">BV72 JVN</option>
+          <option value="SN71 AZG">SN71 AZG</option>
+          <option value="MP19 YXK">MP19 YXK</option>
+          <option value="LO19 CGE">LO19 CGE</option>
+          <option value="PY24 LZE">PY24 LZE</option>
+        </select>
+      </div>
+      
+      <!-- Daily Check Fields -->
+      <div id="dailyFields" class="hidden">
+        <div class="form-group">
+          <label><input type="checkbox" name="vehicleWalkAround" /> Vehicle Walk Around Completed</label>
+        </div>
+        <div class="form-group">
+          <label><input type="checkbox" name="checkLights" /> Lights Checked</label>
+        </div>
+        <div class="form-group">
+          <label><input type="checkbox" name="checkFluidLevels" /> Fluid Levels Checked</label>
+        </div>
+        <div class="form-group">
+          <label><input type="checkbox" name="checkTyres" /> Tyres Checked</label>
+        </div>
+        <div class="form-group">
+          <label>Fault or Damage?</label>
+          <input type="radio" name="dailyFaultOption" id="dailyFaultYes" value="Yes"> Yes
+          <input type="radio" name="dailyFaultOption" id="dailyFaultNo" value="No" checked> No
+        </div>
+        <div class="form-group hidden" id="dailyFaultDescriptionContainer">
+          <label for="dailyFaultDescription">Please describe the fault/damage:</label>
+          <input type="text" id="dailyFaultDescription" name="dailyFaultDescription">
+        </div>
+      </div>
+      
+      <!-- Weekly Check Fields -->
+      <div id="weeklyFields" class="hidden">
+        <div class="form-group">
+          <label for="currentMileage">Current Mileage:</label>
+          <input type="number" id="currentMileage" name="currentMileage" required />
+        </div>
+        <div class="form-group">
+          <label for="tyreCondition">Tyre Condition:</label>
+          <select id="tyreCondition" name="tyreCondition" required>
+            <option value="">Select Condition</option>
+            <option value="Very good">Very good</option>
+            <option value="Good">Good</option>
+            <option value="Ok">Ok</option>
+            <option value="Poor">Poor</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="tyrePressure">Tyre Pressure (psi):</label>
+          <input type="number" id="tyrePressure" name="tyrePressure" required />
+        </div>
+        <!-- Mirror condition moved immediately after Tyre Pressure -->
+        <div class="form-group">
+          <label for="mirrors">Mirror condition:</label>
+          <select id="mirrors" name="mirrors" required>
+            <option value="">Select Condition</option>
+            <option value="Good">Good</option>
+            <option value="Okay">Okay</option>
+            <option value="Poor">Poor</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Brakes working? (incl lights):</label>
+          <input type="radio" name="brakes" id="brakesYes" value="Yes" required> Yes
+          <input type="radio" name="brakes" id="brakesNo" value="No"> No
+        </div>
+        <div class="form-group">
+          <label>Steering and suspension working?</label>
+          <input type="radio" name="steeringSuspension" id="steeringSuspensionYes" value="Yes" required> Yes
+          <input type="radio" name="steeringSuspension" id="steeringSuspensionNo" value="No"> No
+        </div>
+        <div class="form-group">
+          <label>Lights and reflectors working?</label>
+          <input type="radio" name="lightsReflectors" id="lightsReflectorsYes" value="Yes" required> Yes
+          <input type="radio" name="lightsReflectors" id="lightsReflectorsNo" value="No"> No
+        </div>
+        <div class="form-group">
+          <label>Horn working?</label>
+          <input type="radio" name="horn" id="hornYes" value="Yes" required> Yes
+          <input type="radio" name="horn" id="hornNo" value="No"> No
+        </div>
+        <div class="form-group">
+          <label>Fluid Levels:</label>
+          <div class="fluid-group">
+            <label>Oil:</label>
+            <input type="radio" name="oilLevel" value="Good" required> Good
+            <input type="radio" name="oilLevel" value="Needs refilling"> Needs refilling
+          </div>
+          <div class="fluid-group">
+            <label>Coolant:</label>
+            <input type="radio" name="coolantLevel" value="Good" required> Good
+            <input type="radio" name="coolantLevel" value="Needs refilling"> Needs refilling
+          </div>
+          <div class="fluid-group">
+            <label>AdBlue:</label>
+            <input type="radio" name="adblueLevel" value="Good" required> Good
+            <input type="radio" name="adblueLevel" value="Needs refilling"> Needs refilling
+          </div>
+          <div class="fluid-group">
+            <label>Screenwash:</label>
+            <input type="radio" name="screenwashLevel" value="Good" required> Good
+            <input type="radio" name="screenwashLevel" value="Needs refilling"> Needs refilling
+          </div>
+          <div class="fluid-group">
+            <label>Fuel:</label>
+            <input type="radio" name="fuelLevel" value="Good" required> Good
+            <input type="radio" name="fuelLevel" value="Needs refilling"> Needs refilling
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Fault or Damage?</label>
+          <input type="radio" name="weeklyFaultOption" id="weeklyFaultYes" value="Yes"> Yes
+          <input type="radio" name="weeklyFaultOption" id="weeklyFaultNo" value="No" checked> No
+        </div>
+        <div class="form-group hidden" id="weeklyFaultDescriptionContainer">
+          <label for="weeklyFaultDescription">Please describe the fault/damage:</label>
+          <input type="text" id="weeklyFaultDescription" name="weeklyFaultDescription">
+        </div>
+      </div>
+      
+      <!-- New Image Upload Field (allows multiple images) -->
+      <div class="form-group">
+        <label for="imageUpload">Upload Image(s):</label>
+        <input type="file" id="imageUpload" name="imageUpload" accept="image/*" multiple />
+      </div>
+      
+      <button id="submitButton" type="submit">Submit</button>
+    </form>
+  </div>
 
-    <script>
-    document.getElementById("vehicleCheckForm").addEventListener("submit", function(event) {
-        event.preventDefault(); // Prevent default form submission
-        var formData = new FormData(this);
-        fetch(this.action, {
-            method: "POST",
-            body: formData
-        })
-        .then(response => response.text())
-        .then(data => {
-            alert("Form submitted successfully!");
-            document.getElementById("vehicleCheckForm").reset(); // Reset the form after submission
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            alert("Submission failed. Please try again.");
-        });
+  <script>
+    // Toggle daily vs. weekly fields based on Check Type
+    function toggleFields() {
+      var checkType = document.getElementById("checkType").value;
+      var daily = document.getElementById("dailyFields");
+      var weekly = document.getElementById("weeklyFields");
+
+      if (checkType === "Daily") {
+        daily.classList.remove("hidden");
+        weekly.classList.add("hidden");
+        disableInputs(weekly, true);
+        disableInputs(daily, false);
+      } else if (checkType === "Weekly") {
+        weekly.classList.remove("hidden");
+        daily.classList.add("hidden");
+        disableInputs(daily, true);
+        disableInputs(weekly, false);
+      } else {
+        daily.classList.add("hidden");
+        weekly.classList.add("hidden");
+        disableInputs(daily, true);
+        disableInputs(weekly, true);
+      }
+    }
+
+    // Disable/enable inputs within a container
+    function disableInputs(container, disable) {
+      var inputs = container.querySelectorAll("input, select, textarea");
+      inputs.forEach(function(input) {
+        input.disabled = disable;
+      });
+    }
+
+    // Toggle daily fault description field
+    document.querySelectorAll('input[name="dailyFaultOption"]').forEach(function(radio) {
+      radio.addEventListener("change", function(event) {
+        var container = document.getElementById("dailyFaultDescriptionContainer");
+        if (event.target.value === "Yes") {
+          container.classList.remove("hidden");
+          container.querySelector("input").disabled = false;
+        } else {
+          container.classList.add("hidden");
+          container.querySelector("input").disabled = true;
+        }
+      });
     });
-    </script>
+
+    // Toggle weekly fault description field
+    document.querySelectorAll('input[name="weeklyFaultOption"]').forEach(function(radio) {
+      radio.addEventListener("change", function(event) {
+        var container = document.getElementById("weeklyFaultDescriptionContainer");
+        if (event.target.value === "Yes") {
+          container.classList.remove("hidden");
+          container.querySelector("input").disabled = false;
+        } else {
+          container.classList.add("hidden");
+          container.querySelector("input").disabled = true;
+        }
+      });
+    });
+
+    // Toggle Other driver name field if 'Other' is selected
+    function toggleDriverOther() {
+      var driverSelect = document.getElementById("driverName");
+      var otherContainer = document.getElementById("otherDriverNameContainer");
+      if (driverSelect.value === "Other") {
+        otherContainer.classList.remove("hidden");
+        otherContainer.querySelector("input").disabled = false;
+      } else {
+        otherContainer.classList.add("hidden");
+        otherContainer.querySelector("input").disabled = true;
+      }
+    }
+
+    // Form submission handling with disabled button to prevent duplicate submissions
+    document.getElementById("vehicleForm").addEventListener("submit", function(event) {
+      event.preventDefault();
+      var submitButton = document.getElementById("submitButton");
+      submitButton.disabled = true;
+      submitButton.innerText = "Submitting...";
+      
+      var formData = new FormData(this);
+      formData.append("timestamp", new Date().toISOString());
+      
+      fetch(this.action, {
+        method: "POST",
+        body: formData
+      })
+      .then(response => response.text())
+      .then(data => {
+        alert("Form submitted successfully!");
+        this.reset();
+        toggleFields();
+        submitButton.disabled = false;
+        submitButton.innerText = "Submit";
+      })
+      .catch(error => {
+        console.error("Submission error:", error);
+        alert("Submission failed. Please try again.");
+        submitButton.disabled = false;
+        submitButton.innerText = "Submit";
+      });
+    }); 
+  </script>
 </body>
 </html>
