@@ -81,8 +81,7 @@
   <div class="container">
     <h2>Vehicle Checks and Maintenance</h2>
     <!-- Be sure to update the action URL with your deployed Apps Script URL -->
-    <form id="vehicleForm" action="https://script.google.com/macros/s/AKfycbyaY3ea3zDa8f-zaDTbxoY0XznzuHd8K0oe-B5gzMrNHfoVKadb9DLpKz7OLPmALx9wDQ/exec">
-      
+    <form id="vehicleForm" method="POST" enctype="multipart/form-data">      
       <!-- Check Type -->
       <div class="form-group">
         <label for="checkType">Check Type:</label>
@@ -167,16 +166,18 @@
           <label for="tyrePressure">Tyre Pressure (psi):</label>
           <input type="number" id="tyrePressure" name="tyrePressure" required />
         </div>
-        <!-- Mirror condition moved immediately after Tyre Pressure -->
+        
+        <!-- Updated field: Bodywork, Glass and Mirrors -->
         <div class="form-group">
-          <label for="mirrors">Mirror condition:</label>
-          <select id="mirrors" name="mirrors" required>
+          <label for="bodyworkGlassAndMirrors">Bodywork, Glass and Mirrors:</label>
+          <select id="bodyworkGlassAndMirrors" name="bodyworkGlassAndMirrors" required>
             <option value="">Select Condition</option>
             <option value="Good">Good</option>
             <option value="Okay">Okay</option>
             <option value="Poor">Poor</option>
           </select>
         </div>
+        
         <div class="form-group">
           <label>Brakes working? (incl lights):</label>
           <input type="radio" name="brakes" id="brakesYes" value="Yes" required> Yes
@@ -197,6 +198,8 @@
           <input type="radio" name="horn" id="hornYes" value="Yes" required> Yes
           <input type="radio" name="horn" id="hornNo" value="No"> No
         </div>
+        
+        <!-- Fluid Levels -->
         <div class="form-group">
           <label>Fluid Levels:</label>
           <div class="fluid-group">
@@ -213,18 +216,23 @@
             <label>AdBlue:</label>
             <input type="radio" name="adblueLevel" value="Good" required> Good
             <input type="radio" name="adblueLevel" value="Needs refilling"> Needs refilling
+            <input type="radio" name="adblueLevel" value="N/a"> N/a
           </div>
           <div class="fluid-group">
             <label>Screenwash:</label>
             <input type="radio" name="screenwashLevel" value="Good" required> Good
             <input type="radio" name="screenwashLevel" value="Needs refilling"> Needs refilling
           </div>
-          <div class="fluid-group">
-            <label>Fuel:</label>
-            <input type="radio" name="fuelLevel" value="Good" required> Good
-            <input type="radio" name="fuelLevel" value="Needs refilling"> Needs refilling
-          </div>
+          <!-- Fuel group removed -->
         </div>
+        
+        <!-- Moved field: Driver Van Kit and First Aid Kit Present? -->
+        <div class="form-group">
+          <label>Driver Van Kit and First Aid Kit Present?</label>
+          <input type="radio" name="driverVanKitFirstAid" value="Yes" required> Yes
+          <input type="radio" name="driverVanKitFirstAid" value="No"> No
+        </div>
+        
         <div class="form-group">
           <label>Fault or Damage?</label>
           <input type="radio" name="weeklyFaultOption" id="weeklyFaultYes" value="Yes"> Yes
@@ -321,23 +329,67 @@
     }
 
     // Form submission handling with disabled button to prevent duplicate submissions
-    document.getElementById("vehicleForm").addEventListener("submit", function(event) {
+
+    const form = document.getElementById('vehicleForm');
+    form.addEventListener('submit', event => {
       event.preventDefault();
+
       var submitButton = document.getElementById("submitButton");
       submitButton.disabled = true;
       submitButton.innerText = "Submitting...";
+
+      const fileInput = document.getElementById('imageUpload');
+      if (fileInput.files.length > 0){
+        console.log(fileInput.files.length);
+      }
+      else{
+        alert("Please select at least one image to upload.");
+        submitButton.disabled = false;
+        submitButton.innerText = "Submit";
+        return;
+      }
+
+      let date = new Date().toISOString()
       
-      var formData = new FormData(this);
-      formData.append("timestamp", new Date().toISOString());
-      
-      fetch(this.action, {
+      var formData = new FormData(form);
+      formData.append("timestamp", date);
+
+      const url = "https://script.google.com/macros/s/AKfycbzPpwiil9KfSRKyuci2MeoA7irZBXgxMkUrsldiSo-dSNJsFaxIz_j0NQnxt-0Xr2fyNw/exec";
+
+      let file_arr = form.imageUpload.files;
+      let num_files = file_arr.length;
+
+      const promises = [];
+
+      for(let i=0; i<num_files; i++){
+        const file = file_arr[i];
+
+        let fname = formData.get('vehicleReg').replace(" ", "") + "_" + date + "_" + i + "." + file.name.split('.').at(-1);
+
+        const fr = new FileReader();
+        fr.readAsArrayBuffer(file);
+        fr.onload = f => {
+
+          const qs = new URLSearchParams({filename: fname, mimeType: file.type});
+
+          promises.push(
+            fetch(`${url}?${qs}`, {method: "POST", body: JSON.stringify([...new Int8Array(f.target.result)])})
+          );
+        }
+
+      }
+
+      promises.push(fetch(url, {
         method: "POST",
         body: formData
-      })
-      .then(response => response.text())
+      }));
+
+      
+      Promise.all(promises)
+      .then(responses => Promise.all(responses.map(response => response.json())))
       .then(data => {
         alert("Form submitted successfully!");
-        this.reset();
+        form.reset();
         toggleFields();
         submitButton.disabled = false;
         submitButton.innerText = "Submit";
@@ -348,7 +400,10 @@
         submitButton.disabled = false;
         submitButton.innerText = "Submit";
       });
-    }); 
+ 
+    });
+
+
   </script>
 </body>
 </html>
