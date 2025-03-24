@@ -5,6 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vehicle Checks and Maintenance</title>
   <style>
+    /* Header styling with logo */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .logo {
+      max-height: 40px; /* Adjust this value to scale the logo */
+      width: auto;
+      margin-left: 20px;
+    }
     /* Base styling */
     body {
       font-family: "Gill Sans", "Segoe UI", sans-serif;
@@ -135,7 +147,6 @@
       align-items: center;
       z-index: 1000;
     }
-    /* Ensure modal with .hidden stays hidden */
     .modal.hidden {
       display: none !important;
     }
@@ -161,6 +172,19 @@
       cursor: pointer;
       color: #aaa;
     }
+    /* Capture status overlay */
+    #captureStatus {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 16px;
+      z-index: 1100;
+    }
     /* Spinner for progress */
     .spinner {
       border: 4px solid #f3f3f3;
@@ -180,7 +204,11 @@
 </head>
 <body>
   <div class="container">
-    <h2>Vehicle Checks and Maintenance</h2>
+    <!-- Header with logo -->
+    <div class="header">
+      <h2>Vehicle Checks and Maintenance</h2>
+      <img src="logo.png" alt="Logo" class="logo">
+    </div>
     <div id="progressIndicator">Step 1 of 3</div>
     <form id="vehicleForm" method="POST" enctype="multipart/form-data">
       <!-- Step 1: Vehicle Details -->
@@ -218,7 +246,7 @@
             <option value="PY24 LZE">PY24 LZE</option>
           </select>
         </div>
-        <!-- Daily or Weekly Fields (kept inline as before) -->
+        <!-- Daily Fields -->
         <div id="dailyFields" class="hidden">
           <div class="form-group">
             <label><input type="checkbox" name="vehicleWalkAround" value="complete" /> Vehicle Walk Around Completed</label>
@@ -242,8 +270,8 @@
             <input type="text" id="dailyFaultDescription" name="dailyFaultDescription">
           </div>
         </div>
+        <!-- Weekly Fields -->
         <div id="weeklyFields" class="hidden">
-          <!-- Weekly fields as before -->
           <div class="form-group">
             <label for="currentMileage">Current Mileage:</label>
             <input type="number" id="currentMileage" name="currentMileage" required />
@@ -372,6 +400,7 @@
     <div class="modal-content">
       <span class="close" id="closeCameraModal">&times;</span>
       <video id="cameraStream" autoplay></video>
+      <div id="captureStatus" class="hidden">Photo Captured!</div>
       <div style="margin-top:10px;">
         <button type="button" id="capturePhotoModalBtn">Capture Photo</button>
       </div>
@@ -504,6 +533,7 @@
     const closeCameraModal = document.getElementById('closeCameraModal');
     const cameraStreamEl = document.getElementById('cameraStream');
     const capturePhotoModalBtn = document.getElementById('capturePhotoModalBtn');
+    const captureStatus = document.getElementById('captureStatus');
     let stream;
     
     document.getElementById('openCameraBtn').addEventListener('click', async () => {
@@ -520,6 +550,7 @@
       if(stream) { stream.getTracks().forEach(track => track.stop()); }
       cameraModal.classList.add('hidden');
     });
+    
     capturePhotoModalBtn.addEventListener('click', () => {
       const canvas = document.createElement('canvas');
       canvas.width = cameraStreamEl.videoWidth;
@@ -529,6 +560,9 @@
       canvas.toBlob(blob => {
         capturedBlobs.push(blob);
         updateCapturedPreview();
+        // Show the "Photo Captured!" overlay for 2 seconds
+        captureStatus.classList.remove('hidden');
+        setTimeout(() => { captureStatus.classList.add('hidden'); }, 2000);
       }, 'image/jpeg');
     });
     
