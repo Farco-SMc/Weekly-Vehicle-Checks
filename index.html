@@ -57,7 +57,6 @@
       padding: 12px;
       border: none;
       border-radius: 5px;
-      width: 100%;
       font-size: 16px;
       cursor: pointer;
     }
@@ -75,13 +74,62 @@
       font-weight: normal;
       margin-right: 10px;
     }
+    /* Camera interface styling */
+    #cameraContainer {
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    #cameraContainer video {
+      width: 100%;
+      max-width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .previewContainer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .previewItem {
+      position: relative;
+      display: inline-block;
+    }
+    .previewItem img {
+      max-width: 100px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .deleteBtn {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: red;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 18px;
+      padding: 0;
+    }
+    /* Combined image upload buttons */
+    #imageOptions {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    #imageOptions button {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Vehicle Checks and Maintenance</h2>
-    <!-- Be sure to update the action URL with your deployed Apps Script URL -->
-    <form id="vehicleForm" method="POST" enctype="multipart/form-data">      
+    <!-- Update the action URL with your deployed Apps Script URL -->
+    <form id="vehicleForm" method="POST" enctype="multipart/form-data">
       <!-- Check Type -->
       <div class="form-group">
         <label for="checkType">Check Type:</label>
@@ -166,7 +214,6 @@
           <label for="tyrePressure">Tyre Pressure (psi):</label>
           <input type="number" id="tyrePressure" name="tyrePressure" required />
         </div>
-        
         <!-- Updated field: Bodywork, Glass and Mirrors -->
         <div class="form-group">
           <label for="bodyworkGlassAndMirrors">Bodywork, Glass and Mirrors:</label>
@@ -177,7 +224,6 @@
             <option value="Poor">Poor</option>
           </select>
         </div>
-        
         <div class="form-group">
           <label>Brakes working? (incl lights):</label>
           <input type="radio" name="brakes" id="brakesYes" value="Yes" required> Yes
@@ -198,7 +244,6 @@
           <input type="radio" name="horn" id="hornYes" value="Yes" required> Yes
           <input type="radio" name="horn" id="hornNo" value="No"> No
         </div>
-        
         <!-- Fluid Levels -->
         <div class="form-group">
           <label>Fluid Levels:</label>
@@ -223,16 +268,13 @@
             <input type="radio" name="screenwashLevel" value="Good" required> Good
             <input type="radio" name="screenwashLevel" value="Needs refilling"> Needs refilling
           </div>
-          <!-- Fuel group removed -->
         </div>
-        
-        <!-- Moved field: Driver Van Kit and First Aid Kit Present? -->
+        <!-- Driver Van Kit and First Aid Kit Present? -->
         <div class="form-group">
           <label>Driver Van Kit and First Aid Kit Present?</label>
           <input type="radio" name="driverVanKitFirstAid" value="Yes" required> Yes
           <input type="radio" name="driverVanKitFirstAid" value="No"> No
         </div>
-        
         <div class="form-group">
           <label>Fault or Damage?</label>
           <input type="radio" name="weeklyFaultOption" id="weeklyFaultYes" value="Yes"> Yes
@@ -244,23 +286,45 @@
         </div>
       </div>
       
-      <!-- New Image Upload Field (allows multiple images) -->
+      <!-- Combined Image Upload Options -->
       <div class="form-group">
-        <label for="imageUpload">Upload Image(s):</label>
-        <input type="file" id="imageUpload" name="imageUpload" accept="image/*" capture="environment" multiple />
+        <label>Add Image(s):</label>
+        <div id="imageOptions">
+          <button type="button" id="uploadDeviceBtn">Upload from Device</button>
+          <button type="button" id="openCameraBtn">Take Photo</button>
+        </div>
       </div>
+      <!-- Hidden file input for device uploads -->
+      <input type="file" id="galleryUpload" accept="image/*" multiple style="display:none;" />
+      
+      <!-- Preview for Gallery Images -->
+      <div id="galleryPreview" class="form-group previewContainer"></div>
+      
+      <!-- Camera Interface -->
+      <div id="cameraContainer" class="hidden">
+        <video id="cameraStream" autoplay></video>
+        <div style="margin-top: 10px;">
+          <button type="button" id="capturePhotoBtn">Capture Photo</button>
+          <button type="button" id="closeCameraBtn">Close Camera</button>
+        </div>
+      </div>
+      <!-- Preview for Captured Photos -->
+      <div id="capturedPhotos" class="form-group previewContainer"></div>
       
       <button id="submitButton" type="submit">Submit</button>
     </form>
   </div>
 
   <script>
-    // Toggle daily vs. weekly fields based on Check Type
-    function toggleFields() {
-      var checkType = document.getElementById("checkType").value;
-      var daily = document.getElementById("dailyFields");
-      var weekly = document.getElementById("weeklyFields");
+    // Global arrays for managing selected images
+    let galleryFiles = [];
+    let capturedBlobs = [];
 
+    // Toggle fields based on check type
+    function toggleFields() {
+      const checkType = document.getElementById("checkType").value;
+      const daily = document.getElementById("dailyFields");
+      const weekly = document.getElementById("weeklyFields");
       if (checkType === "Daily") {
         daily.classList.remove("hidden");
         weekly.classList.add("hidden");
@@ -278,19 +342,15 @@
         disableInputs(weekly, true);
       }
     }
-
-    // Disable/enable inputs within a container
     function disableInputs(container, disable) {
-      var inputs = container.querySelectorAll("input, select, textarea");
-      inputs.forEach(function(input) {
+      container.querySelectorAll("input, select, textarea").forEach(input => {
         input.disabled = disable;
       });
     }
-
-    // Toggle daily fault description field
-    document.querySelectorAll('input[name="dailyFaultOption"]').forEach(function(radio) {
-      radio.addEventListener("change", function(event) {
-        var container = document.getElementById("dailyFaultDescriptionContainer");
+    // Toggle fault description fields
+    document.querySelectorAll('input[name="dailyFaultOption"]').forEach(radio => {
+      radio.addEventListener("change", event => {
+        const container = document.getElementById("dailyFaultDescriptionContainer");
         if (event.target.value === "Yes") {
           container.classList.remove("hidden");
           container.querySelector("input").disabled = false;
@@ -300,11 +360,9 @@
         }
       });
     });
-
-    // Toggle weekly fault description field
-    document.querySelectorAll('input[name="weeklyFaultOption"]').forEach(function(radio) {
-      radio.addEventListener("change", function(event) {
-        var container = document.getElementById("weeklyFaultDescriptionContainer");
+    document.querySelectorAll('input[name="weeklyFaultOption"]').forEach(radio => {
+      radio.addEventListener("change", event => {
+        const container = document.getElementById("weeklyFaultDescriptionContainer");
         if (event.target.value === "Yes") {
           container.classList.remove("hidden");
           container.querySelector("input").disabled = false;
@@ -314,11 +372,9 @@
         }
       });
     });
-
-    // Toggle Other driver name field if 'Other' is selected
     function toggleDriverOther() {
-      var driverSelect = document.getElementById("driverName");
-      var otherContainer = document.getElementById("otherDriverNameContainer");
+      const driverSelect = document.getElementById("driverName");
+      const otherContainer = document.getElementById("otherDriverNameContainer");
       if (driverSelect.value === "Other") {
         otherContainer.classList.remove("hidden");
         otherContainer.querySelector("input").disabled = false;
@@ -328,71 +384,175 @@
       }
     }
 
-    // Form submission handling with disabled button to prevent duplicate submissions
+    // ---- Gallery Upload and Preview Handling ----
+    document.getElementById('uploadDeviceBtn').addEventListener('click', () => {
+      document.getElementById('galleryUpload').click();
+    });
+    document.getElementById('galleryUpload').addEventListener('change', function() {
+      // Add selected files to galleryFiles array
+      Array.from(this.files).forEach(file => galleryFiles.push(file));
+      updateGalleryPreview();
+      // Clear the file input value so that selecting the same file again will trigger the change event
+      this.value = "";
+    });
+    function updateGalleryPreview() {
+      const previewContainer = document.getElementById('galleryPreview');
+      previewContainer.innerHTML = "";
+      galleryFiles.forEach((file, index) => {
+        const previewItem = document.createElement('div');
+        previewItem.className = "previewItem";
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        // Delete button for this file
+        const delBtn = document.createElement('button');
+        delBtn.innerText = "×";
+        delBtn.className = "deleteBtn";
+        delBtn.onclick = () => removeGalleryFile(index);
+        previewItem.appendChild(img);
+        previewItem.appendChild(delBtn);
+        previewContainer.appendChild(previewItem);
+      });
+    }
+    function removeGalleryFile(index) {
+      galleryFiles.splice(index, 1);
+      updateGalleryPreview();
+    }
 
+    // ---- Camera Interface and Preview Handling ----
+    const openCameraBtn = document.getElementById('openCameraBtn');
+    const closeCameraBtn = document.getElementById('closeCameraBtn');
+    const capturePhotoBtn = document.getElementById('capturePhotoBtn');
+    const cameraContainer = document.getElementById('cameraContainer');
+    const cameraStreamEl = document.getElementById('cameraStream');
+    const capturedPhotosDiv = document.getElementById('capturedPhotos');
+    let stream;
+    openCameraBtn.addEventListener('click', async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        cameraStreamEl.srcObject = stream;
+        cameraContainer.classList.remove('hidden');
+      } catch (err) {
+        console.error("Error accessing camera: ", err);
+        alert("Could not access the camera.");
+      }
+    });
+    capturePhotoBtn.addEventListener('click', () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = cameraStreamEl.videoWidth;
+      canvas.height = cameraStreamEl.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(cameraStreamEl, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(blob => {
+        capturedBlobs.push(blob);
+        updateCapturedPreview();
+      }, 'image/jpeg');
+    });
+    function updateCapturedPreview() {
+      capturedPhotosDiv.innerHTML = "";
+      capturedBlobs.forEach((blob, index) => {
+        const previewItem = document.createElement('div');
+        previewItem.className = "previewItem";
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(blob);
+        const delBtn = document.createElement('button');
+        delBtn.innerText = "×";
+        delBtn.className = "deleteBtn";
+        delBtn.onclick = () => removeCapturedImage(index);
+        previewItem.appendChild(img);
+        previewItem.appendChild(delBtn);
+        capturedPhotosDiv.appendChild(previewItem);
+      });
+    }
+    function removeCapturedImage(index) {
+      capturedBlobs.splice(index, 1);
+      updateCapturedPreview();
+    }
+    closeCameraBtn.addEventListener('click', () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        cameraContainer.classList.add('hidden');
+      }
+    });
+
+    // ---- Form Submission ----
     const form = document.getElementById('vehicleForm');
     form.addEventListener('submit', event => {
       event.preventDefault();
-
-      var submitButton = document.getElementById("submitButton");
+      const submitButton = document.getElementById("submitButton");
       submitButton.disabled = true;
       submitButton.innerText = "Submitting...";
-
-      let date = new Date().toISOString()
-      
-      var formData = new FormData(form);
+      const date = new Date().toISOString();
+      const formData = new FormData(form);
       formData.append("timestamp", date);
-
-      const url = "https://script.google.com/macros/s/AKfycbzPpwiil9KfSRKyuci2MeoA7irZBXgxMkUrsldiSo-dSNJsFaxIz_j0NQnxt-0Xr2fyNw/exec";
-
-      let file_arr = form.imageUpload.files;
-      let num_files = file_arr.length;
-
+      const url = "https://script.google.com/macros/s/AKfycbzNsiDQnxyTuwcqUnKb6HXQgbEIV-JzAf-PvPehpQRSqphq54ImrUTSm8NRpAx-WV8qCA/exec";
       const promises = [];
 
-      for(let i=0; i<num_files; i++){
-        const file = file_arr[i];
-
-        let fname = formData.get('vehicleReg').replace(" ", "") + "_" + date + "_" + i + "." + file.name.split('.').at(-1);
-
-        const fr = new FileReader();
-        fr.readAsArrayBuffer(file);
-        fr.onload = f => {
-
-          const qs = new URLSearchParams({filename: fname, mimeType: file.type});
-
-          promises.push(
-            fetch(`${url}?${qs}`, {method: "POST", body: JSON.stringify([...new Int8Array(f.target.result)])})
-          );
-        }
-
-      }
-
-      promises.push(fetch(url, {
-        method: "POST",
-        body: formData
-      }));
-
-      
-      Promise.all(promises)
-      .then(responses => Promise.all(responses.map(response => response.json())))
-      .then(data => {
-        alert("Form submitted successfully!");
-        form.reset();
-        toggleFields();
-        submitButton.disabled = false;
-        submitButton.innerText = "Submit";
-      })
-      .catch(error => {
-        console.error("Submission error:", error);
-        alert("Submission failed. Please try again.");
-        submitButton.disabled = false;
-        submitButton.innerText = "Submit";
+      // Process gallery files
+      galleryFiles.forEach((file, i) => {
+        const fname = formData.get('vehicleReg').replace(" ", "") + "_" + date + "_" + i + "." + file.name.split('.').pop();
+        promises.push(new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = f => {
+            const qs = new URLSearchParams({ filename: fname, mimeType: file.type });
+            fetch(`${url}?${qs}`, {
+              method: "POST",
+              body: JSON.stringify([...new Uint8Array(f.target.result)])
+            })
+              .then(response => response.json())
+              .then(data => resolve(data))
+              .catch(err => reject(err));
+          };
+          fr.onerror = err => reject(err);
+          fr.readAsArrayBuffer(file);
+        }));
       });
- 
+
+      // Process captured blobs
+      capturedBlobs.forEach((blob, i) => {
+        const fname = formData.get('vehicleReg').replace(" ", "") + "_" + date + "_captured_" + i + ".jpg";
+        promises.push(new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = f => {
+            const qs = new URLSearchParams({ filename: fname, mimeType: blob.type });
+            fetch(`${url}?${qs}`, {
+              method: "POST",
+              body: JSON.stringify([...new Uint8Array(f.target.result)])
+            })
+              .then(response => response.json())
+              .then(data => resolve(data))
+              .catch(err => reject(err));
+          };
+          fr.onerror = err => reject(err);
+          fr.readAsArrayBuffer(blob);
+        }));
+      });
+
+      // Submit form data (non-file fields)
+      promises.push(
+        fetch(url, {
+          method: "POST",
+          body: formData
+        }).then(response => response.json())
+      );
+
+      Promise.all(promises)
+        .then(data => {
+          alert("Form submitted successfully!");
+          form.reset();
+          galleryFiles = [];
+          capturedBlobs = [];
+          updateGalleryPreview();
+          updateCapturedPreview();
+          submitButton.disabled = false;
+          submitButton.innerText = "Submit";
+        })
+        .catch(error => {
+          console.error("Submission error:", error);
+          alert("Submission failed. Please try again.");
+          submitButton.disabled = false;
+          submitButton.innerText = "Submit";
+        });
     });
-
-
   </script>
 </body>
 </html>
