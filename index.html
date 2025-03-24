@@ -338,17 +338,6 @@
       submitButton.disabled = true;
       submitButton.innerText = "Submitting...";
 
-      const fileInput = document.getElementById('imageUpload');
-      if (fileInput.files.length > 0){
-        console.log(fileInput.files.length);
-      }
-      else{
-        alert("Please select at least one image to upload.");
-        submitButton.disabled = false;
-        submitButton.innerText = "Submit";
-        return;
-      }
-
       let date = new Date().toISOString()
       
       var formData = new FormData(form);
