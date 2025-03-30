@@ -13,7 +13,7 @@
       margin-bottom: 20px;
     }
     .logo {
-      max-height: 35px; /* Adjust this value to scale the logo */
+      max-height: 40px; /* Adjust this value to scale the logo */
       width: auto;
       margin-left: 20px;
     }
@@ -32,6 +32,7 @@
       padding: 30px;
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      position: relative;
     }
     h2 {
       font-family: "Begum Semi Bold", "Gill Sans", sans-serif;
@@ -155,9 +156,14 @@
       padding: 20px;
       border-radius: 8px;
       position: relative;
-      text-align: center;
+      text-align: left;
       max-width: 90%;
       width: 400px;
+    }
+    /* Ensure FAQ modal content is scrollable */
+    .faq-content {
+      max-height: 80vh;
+      overflow-y: auto;
     }
     .modal-content video {
       width: 100%;
@@ -200,7 +206,98 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+    /* FAQ Button Styling */
+    #faqButtonContainer {
+      text-align: center;
+      margin-top: 20px;
+    }
   </style>
+  <script>
+    /***** Set Check Type Based on First Check Question *****/
+    function setCheckType(type) {
+      document.getElementById("checkType").value = type;
+      toggleFields();
+    }
+    
+    /***** Toggle Fields Based on Check Type *****/
+    function toggleFields() {
+      const checkType = document.getElementById("checkType").value;
+      const daily = document.getElementById("dailyFields");
+      const weekly = document.getElementById("weeklyFields");
+      if (checkType === "Daily") {
+        daily.classList.remove("hidden");
+        weekly.classList.add("hidden");
+        disableInputs(weekly, true);
+        disableInputs(daily, false);
+      } else if (checkType === "Weekly") {
+        weekly.classList.remove("hidden");
+        daily.classList.add("hidden");
+        disableInputs(daily, true);
+        disableInputs(weekly, false);
+      } else {
+        daily.classList.add("hidden");
+        weekly.classList.add("hidden");
+        disableInputs(daily, true);
+        disableInputs(weekly, true);
+      }
+    }
+    function disableInputs(container, disable) {
+      container.querySelectorAll("input, select, textarea").forEach(input => {
+        input.disabled = disable;
+      });
+    }
+    function toggleDriverOther() {
+      const driverSelect = document.getElementById("driverName");
+      const otherContainer = document.getElementById("otherDriverNameContainer");
+      if (driverSelect.value === "Other") {
+        otherContainer.classList.remove("hidden");
+        otherContainer.querySelector("input").disabled = false;
+      } else {
+        otherContainer.classList.add("hidden");
+        otherContainer.querySelector("input").disabled = true;
+      }
+    }
+    /***** FAQ Modal Logic *****/
+    function openFaq() {
+      document.getElementById("faqModal").classList.remove("hidden");
+    }
+    function closeFaq() {
+      document.getElementById("faqModal").classList.add("hidden");
+    }
+    
+    /***** Attach Event Listeners for Fault/Damage Radio Buttons *****/
+    document.addEventListener("DOMContentLoaded", function() {
+      document.querySelectorAll('input[name="dailyFaultOption"]').forEach(radio => {
+        radio.addEventListener("change", event => {
+          const container = document.getElementById("dailyFaultDescriptionContainer");
+          if (event.target.value === "Yes") {
+            container.classList.remove("hidden");
+            container.querySelector("input").disabled = false;
+          } else {
+            container.classList.add("hidden");
+            container.querySelector("input").disabled = true;
+          }
+        });
+      });
+      document.querySelectorAll('input[name="weeklyFaultOption"]').forEach(radio => {
+        radio.addEventListener("change", event => {
+          const container = document.getElementById("weeklyFaultDescriptionContainer");
+          if (event.target.value === "Yes") {
+            container.classList.remove("hidden");
+            container.querySelector("input").disabled = false;
+          } else {
+            container.classList.add("hidden");
+            container.querySelector("input").disabled = true;
+          }
+        });
+      });
+    });
+    
+    /***** Update imagesUploaded Field When Images are Added *****/
+    function markImagesUploaded() {
+      document.getElementById("imagesUploaded").value = "Yes";
+    }
+  </script>
 </head>
 <body>
   <div class="container">
@@ -211,15 +308,18 @@
     </div>
     <div id="progressIndicator">Step 1 of 3</div>
     <form id="vehicleForm" method="POST" enctype="multipart/form-data">
+      <!-- Hidden field to store check type -->
+      <input type="hidden" id="checkType" name="checkType" />
+      <!-- New hidden field for imagesUploaded -->
+      <input type="hidden" id="imagesUploaded" name="imagesUploaded" value="No">
+      
       <!-- Step 1: Vehicle Details -->
       <div class="step active" id="step1">
+        <!-- New: First Check Question -->
         <div class="form-group">
-          <label for="checkType">Check Type:</label>
-          <select id="checkType" name="checkType" required onchange="toggleFields()">
-            <option value="">Select Check Type...</option>
-            <option value="Daily">Daily Vehicle Check</option>
-            <option value="Weekly">Weekly Vehicle Check</option>
-          </select>
+          <label>Is this your first vehicle check for this vehicle as part of this route?</label>
+          <input type="radio" name="firstCheck" value="Yes" required onclick="setCheckType('Weekly')"> Yes
+          <input type="radio" name="firstCheck" value="No" onclick="setCheckType('Daily')"> No
         </div>
         <div class="form-group">
           <label for="driverName">Driver Name:</label>
@@ -246,7 +346,7 @@
             <option value="PY24 LZE">PY24 LZE</option>
           </select>
         </div>
-        <!-- Daily Fields -->
+        <!-- Fields for Subsequent Daily Walk Around Checks -->
         <div id="dailyFields" class="hidden">
           <div class="form-group">
             <label><input type="checkbox" name="vehicleWalkAround" value="complete" /> Vehicle Walk Around Completed</label>
@@ -270,7 +370,7 @@
             <input type="text" id="dailyFaultDescription" name="dailyFaultDescription">
           </div>
         </div>
-        <!-- Weekly Fields -->
+        <!-- Fields for First Check with Vehicle -->
         <div id="weeklyFields" class="hidden">
           <div class="form-group">
             <label for="currentMileage">Current Mileage:</label>
@@ -391,8 +491,47 @@
         <button type="button" id="backBtn" class="hidden">Back</button>
         <button type="button" id="nextBtn">Next</button>
       </div>
-      
     </form>
+    
+    <!-- FAQ Button (visible on every page) -->
+    <div id="faqButtonContainer">
+      <button type="button" id="openFaqBtn" onclick="openFaq()">FAQ</button>
+    </div>
+  </div>
+  
+  <!-- FAQ Modal -->
+  <div id="faqModal" class="modal hidden">
+    <div class="modal-content">
+      <span class="close" id="closeFaqModal" onclick="closeFaq()">&times;</span>
+      <div class="faq-content">
+        <h2>Frequently Asked Questions</h2>
+        
+        <h3>Why are vehicle checks necessary?</h3>
+        <p>Regular vehicle checks are a legal requirement under UK health and safety law. Drivers must ensure that their vehicle is safe and roadworthy to prevent accidents and comply with regulations enforced by the DVSA.</p>
+        
+        <h3>What are the two types of checks in this form?</h3>
+        <p><strong>First check with vehicle:</strong> This is a comprehensive inspection conducted at the start of your route. It covers detailed assessments of the vehicle’s mechanical systems, safety equipment, and overall condition.</p>
+        <p><strong>Subsequent daily walk around checks:</strong> These are simplified, visual inspections carried out later during your route to confirm that no new issues have developed.</p>
+        
+        <h3>Do I have to do both checks?</h3>
+        <p>If it is your first time using the vehicle on a given route, you must complete the full <strong>first check with vehicle</strong>. For any additional checks during that route, only a <strong>subsequent daily walk around check</strong> is required unless a new shift begins or a different driver uses the vehicle.</p>
+        
+        <h3>What are my responsibilities as a driver?</h3>
+        <p>You are legally required to check your vehicle before driving. This involves conducting a thorough initial inspection and following up with regular visual checks to ensure ongoing safety. Reporting any faults immediately is a crucial part of your duty to maintain a safe driving environment.</p>
+        
+        <h3>What if I find a defect?</h3>
+        <p>Any faults must be reported immediately using the reporting fields in this form. Do not drive the vehicle until a manager has assessed the issue and confirmed that it is safe to proceed. While faults are automatically and immediately recorded upon submission of the form, it is strongly encouraged that you also contact a company Director (Chris or Anna) to report the issue and seek guidance on the next steps to ensure safety.</p>
+        
+        <h3>How is the information from this form used for vehicle maintenance?</h3>
+        <p>The answers provided in this form feed into a central database, which automatically flags defects and highlights when routine servicing is due. It is important that the form is completed accurately and in full to ensure any issues are picked up quickly and the vehicle remains safe and compliant.</p>
+        
+        <h3>What should I do if I feel too tired or unwell to drive?</h3>
+        <p>While this is not covered directly in the vehicle check form, driver fatigue and general health are important safety considerations. If you feel unwell or too tired to drive safely, this must be reported to a company Director (Chris or Anna) as soon as possible.</p>
+        
+        <h3>What happens if I don’t complete the checks properly?</h3>
+        <p>Completing vehicle checks is a legal requirement and a condition of using company vehicles. Failure to carry out the necessary checks or report faults properly may result in disciplinary action. All submissions are monitored, and any issues will be followed up by management to ensure continued safety and compliance.</p>
+      </div>
+    </div>
   </div>
   
   <!-- Modal for Camera Interface -->
@@ -434,69 +573,6 @@
       else { submitForm(); }
     });
     
-    /***** VEHICLE DETAILS HANDLING *****/
-    function toggleFields() {
-      const checkType = document.getElementById("checkType").value;
-      const daily = document.getElementById("dailyFields");
-      const weekly = document.getElementById("weeklyFields");
-      if (checkType === "Daily") {
-        daily.classList.remove("hidden");
-        weekly.classList.add("hidden");
-        disableInputs(weekly, true);
-        disableInputs(daily, false);
-      } else if (checkType === "Weekly") {
-        weekly.classList.remove("hidden");
-        daily.classList.add("hidden");
-        disableInputs(daily, true);
-        disableInputs(weekly, false);
-      } else {
-        daily.classList.add("hidden");
-        weekly.classList.add("hidden");
-        disableInputs(daily, true);
-        disableInputs(weekly, true);
-      }
-    }
-    function disableInputs(container, disable) {
-      container.querySelectorAll("input, select, textarea").forEach(input => {
-        input.disabled = disable;
-      });
-    }
-    document.querySelectorAll('input[name="dailyFaultOption"]').forEach(radio => {
-      radio.addEventListener("change", event => {
-        const container = document.getElementById("dailyFaultDescriptionContainer");
-        if (event.target.value === "Yes") {
-          container.classList.remove("hidden");
-          container.querySelector("input").disabled = false;
-        } else {
-          container.classList.add("hidden");
-          container.querySelector("input").disabled = true;
-        }
-      });
-    });
-    document.querySelectorAll('input[name="weeklyFaultOption"]').forEach(radio => {
-      radio.addEventListener("change", event => {
-        const container = document.getElementById("weeklyFaultDescriptionContainer");
-        if (event.target.value === "Yes") {
-          container.classList.remove("hidden");
-          container.querySelector("input").disabled = false;
-        } else {
-          container.classList.add("hidden");
-          container.querySelector("input").disabled = true;
-        }
-      });
-    });
-    function toggleDriverOther() {
-      const driverSelect = document.getElementById("driverName");
-      const otherContainer = document.getElementById("otherDriverNameContainer");
-      if (driverSelect.value === "Other") {
-        otherContainer.classList.remove("hidden");
-        otherContainer.querySelector("input").disabled = false;
-      } else {
-        otherContainer.classList.add("hidden");
-        otherContainer.querySelector("input").disabled = true;
-      }
-    }
-    
     /***** IMAGE HANDLING *****/
     let galleryFiles = [];
     let capturedBlobs = [];
@@ -508,6 +584,8 @@
     document.getElementById('galleryUpload').addEventListener('change', function() {
       Array.from(this.files).forEach(file => galleryFiles.push(file));
       updateGalleryPreview();
+      // Mark that images were uploaded
+      markImagesUploaded();
       this.value = "";
     });
     function updateGalleryPreview() {
@@ -560,6 +638,8 @@
       canvas.toBlob(blob => {
         capturedBlobs.push(blob);
         updateCapturedPreview();
+        // Mark that images were uploaded
+        markImagesUploaded();
         // Show the "Photo Captured!" overlay for 2 seconds
         captureStatus.classList.remove('hidden');
         setTimeout(() => { captureStatus.classList.add('hidden'); }, 2000);
@@ -625,7 +705,7 @@
       const date = new Date().toISOString();
       const formData = new FormData(document.getElementById('vehicleForm'));
       formData.append("timestamp", date);
-      const url = "https://script.google.com/macros/s/AKfycbzNsiDQnxyTuwcqUnKb6HXQgbEIV-JzAf-PvPehpQRSqphq54ImrUTSm8NRpAx-WV8qCA/exec";
+      const url = "https://script.google.com/macros/s/AKfycbz27uHsfIg-kUPlUGd4rvoVM14aBHgp_xHAzBw9-1Ky9Vb9oxdq7G74sy0yPwYDpQirPg/exec";
       const promises = [];
       
       // Process gallery files
