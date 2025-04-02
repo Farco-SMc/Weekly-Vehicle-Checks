@@ -90,10 +90,14 @@
       margin-bottom: 20px;
       font-weight: bold;
     }
+    /* Navigation buttons: Back always on left (using visibility so space remains) and Next always on right */
     #navigationButtons {
       display: flex;
       justify-content: space-between;
       margin-top: 20px;
+    }
+    #backBtn {
+      visibility: hidden; /* Reserve space even when hidden */
     }
     /* Preview container and delete button */
     .previewContainer {
@@ -160,7 +164,6 @@
       max-width: 90%;
       width: 400px;
     }
-    /* Ensure FAQ modal content is scrollable */
     .faq-content {
       max-height: 80vh;
       overflow-y: auto;
@@ -178,7 +181,6 @@
       cursor: pointer;
       color: #aaa;
     }
-    /* Capture status overlay */
     #captureStatus {
       position: absolute;
       top: 10px;
@@ -191,7 +193,6 @@
       font-size: 16px;
       z-index: 1100;
     }
-    /* Spinner for progress */
     .spinner {
       border: 4px solid #f3f3f3;
       border-top: 4px solid #f7941d;
@@ -206,67 +207,449 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    /* FAQ Button Styling */
     #faqButtonContainer {
       text-align: center;
       margin-top: 20px;
     }
+    .fluid-grid-row {
+      display: grid;
+      grid-template-columns: 120px repeat(3, 1fr);
+      align-items: center;
+      gap: 6px;
+      padding: 2px 0;
+      margin-bottom: 12px;
+      font-weight: normal;
+      font-size: 0.95em;
+    }
+    .fluid-label {
+      width: 100px;
+      font-weight: bold;
+      font-size: 0.95em;
+      color: #444;
+    }
+    .fluid-grid-row label {
+      margin-right: 15px;
+      font-weight: normal;
+      font-size: 0.95em;
+    }
+    textarea#dailyNotes,
+    textarea#weeklyNotes {
+      font-family: "Gill Sans", sans-serif;
+    }
   </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Vehicle Checks and Maintenance</h2>
+      <img src="logo.png" alt="Logo" class="logo">
+    </div>
+    <div id="progressIndicator">Step 1</div>
+    <form id="vehicleForm" method="POST" enctype="multipart/form-data">
+      <!-- Hidden fields -->
+      <input type="hidden" id="checkType" name="checkType" />
+      <input type="hidden" id="imagesUploaded" name="imagesUploaded" value="No">
+      
+      <!-- Step 1: Common Details -->
+      <div class="step" id="commonDetails">
+        <div class="form-group">
+          <label>Is this your first vehicle check for this vehicle as part of this route?</label>
+          <input type="radio" name="firstCheck" value="Yes" required onclick="setCheckType('Weekly')"> Yes
+          <input type="radio" name="firstCheck" value="No" onclick="setCheckType('Daily')"> No
+        </div>
+        <div class="form-group">
+          <label for="driverName">Driver Name:</label>
+          <select id="driverName" name="driverName" required onchange="toggleDriverOther()">
+            <option value="">Select Driver Name</option>
+            <option value="Mat Roberts">Mat Roberts</option>
+            <option value="Leo Baptiste">Leo Baptiste</option>
+            <option value="Ed Sykes">Ed Sykes</option>
+            <option value="Stewart Kenny">Stewart Kenny</option>
+            <option value="Frank Libal">Frank Libal</option>
+            <option value="Chris Bull">Chris Bull</option>
+            <option value="Julia Stockdale">Julia Stockdale</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group hidden" id="otherDriverNameContainer">
+          <label for="otherDriverName">Please enter driver name:</label>
+          <input type="text" id="otherDriverName" name="otherDriverName">
+        </div>
+        <div class="form-group">
+          <label for="vehicleReg">Vehicle Registration:</label>
+          <select id="vehicleReg" name="vehicleReg" required onchange="updateTyrePressureNote()">
+            <option value="">Select Registration</option>
+            <option value="BV72 JVN">BV72 JVN - Black Renault Master</option>
+            <option value="SN71 AZG">SN71 AZG - Grey Nissan Luton</option>
+            <option value="MP19 YXK">MP19 YXK - White Citroen Relay</option>
+            <option value="LO19 CGE">LO19 CGE - Black Citroen Relay</option>
+            <option value="PY24 LZE">PY24 LZE - White Maxus</option>
+          </select>
+        </div>
+        <div class="form-group hidden" id="currentMileageGroup">
+          <label for="currentMileage">Current Mileage:</label>
+          <input type="text" id="currentMileage" name="currentMileage" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+        </div>
+      </div>
+      
+      <!-- Step 2a: Daily Check Fields (for Daily branch) -->
+      <div class="step" id="dailyStep">
+        <div class="form-group">
+          <label><input type="checkbox" name="vehicleWalkAround" value="complete"> Vehicle Walk Around Completed</label>
+          <span style="font-weight: normal; font-size: 0.85em; color: #555;">
+          Visually inspect the exterior, checking for any obvious damage, loose parts, or debris.
+        </span>
+        </div>
+        <div class="form-group">
+          <label><input type="checkbox" name="checkLights" value="checked"> Lights Checked</label>
+          <span style="font-weight: normal; font-size: 0.85em; color: #555;">
+          Confirm that all exterior lights (headlights, tail lights, indicators) are functioning correctly.
+        </span>
+        </div>
+        <div class="form-group">
+          <label><input type="checkbox" name="dashLightsWorkingDaily" value="checked"> Dash Lights Checked</label>
+          <span style="font-weight: normal; font-size: 0.85em; color: #555;">
+          Ensure the instrument panel lights are working and clearly visible.
+        </span>
+        </div>
+        <div class="form-group">
+          <label><input type="checkbox" name="checkFluidLevels" value="checked"> Fluid Levels Checked</label>
+          <span style="font-weight: normal; font-size: 0.85em; color: #555;">
+          Check engine oil, coolant, and other fluids for proper levels.
+        </span>
+        </div>
+        <div class="form-group">
+          <label><input type="checkbox" name="checkTyres" value="checked"> Tyres Checked</label>
+          <span style="font-weight: normal; font-size: 0.85em; color: #555;">
+          Inspect tyres for tread depth, damage to side walls, proper inflation and check that wheel nuts are secure.
+        </span>
+        </div>
+        <div class="form-group">
+          <label>Fault or Damage?</label>
+          <input type="radio" name="dailyFaultOption" value="Yes" id="dailyFaultYes"> Yes
+          <input type="radio" name="dailyFaultOption" value="No" id="dailyFaultNo" checked> No
+        </div>
+        <div class="form-group hidden" id="dailyFaultDescriptionContainer">
+          <label for="dailyFaultDescription">Please describe the fault/damage:</label>
+          <input type="text" id="dailyFaultDescription" name="dailyFaultDescription">
+        </div>
+        <div class="form-group">
+          <label for="dailyNotes">Other Notes and Comments:</label>
+          <textarea id="dailyNotes" name="dailyNotes" rows="3" placeholder="Optional notes about the vehicle or check..."></textarea>
+        </div>
+      </div>
+      
+      <!-- Step 2b: Weekly Check Fields (for Weekly branch) -->
+      <div class="step hidden" id="weeklyStep">
+        <div class="form-group">
+          <label>Tyre Pressure (psi):</label>
+          <p style="font-size: 0.9em; color: #555; margin: -2px 0 10px;">Orientation is from the perspective of driving the vehicle.</p>
+          <p id="tyrePressureNote" style="font-size: 0.9em; color: #333; font-weight: bold;"></p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+              <label for="tyrePressureFrontLeft">Front Left:</label>
+              <input type="text" id="tyrePressureFrontLeft" name="tyrePressureFrontLeft" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+            </div>
+            <div>
+              <label for="tyrePressureFrontRight">Front Right:</label>
+              <input type="text" id="tyrePressureFrontRight" name="tyrePressureFrontRight" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+            </div>
+            <div>
+              <label for="tyrePressureBackLeft">Back Left:</label>
+              <input type="text" id="tyrePressureBackLeft" name="tyrePressureBackLeft" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+            </div>
+            <div>
+              <label for="tyrePressureBackRight">Back Right:</label>
+              <input type="text" id="tyrePressureBackRight" name="tyrePressureBackRight" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="tyreConditionVisual">
+            Tyre Condition – Visual Check:
+            <span style="display:block; font-weight: normal; font-size: 0.9em; color: #555; margin: 1px 0 10px;">Check for damage, wear, or balding.</span>
+          </label>
+          <select id="tyreConditionVisual" name="tyreConditionVisual" required onchange="toggleTyreConditionOther()">
+            <option value="">Select Condition</option>
+            <option value="Good">No visible issues</option>
+            <option value="Okay">Minor wear or surface damage</option>
+            <option value="Poor">Visible damage or unsafe</option>
+          </select>
+          <div class="form-group hidden" id="tyreConditionOtherContainer">
+            <label for="tyreConditionOtherDetails">Please describe the damage:</label>
+            <input type="text" id="tyreConditionOtherDetails" name="tyreConditionOtherDetails">
+          </div>
+        </div>
+        <div class="form-group">
+          <label style="font-weight: bold;">
+            Are all of the tyre treads safe and in line with legal limits?
+            <span style="display:block; font-weight: normal; font-size: 0.9em; color: #555; margin: 1px 0 10px;">
+              Note: Legal minimum tread depth is 1.6mm across the central three-quarters.
+            </span>
+          </label>
+          <div style="display: flex; gap: 20px;">
+            <label style="font-weight: normal;">
+              <input type="radio" name="tyreTreadSafety" value="Yes" required> Yes
+            </label>
+            <label style="font-weight: normal;">
+              <input type="radio" name="tyreTreadSafety" value="No"> No
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="bodyworkGlassAndMirrors">Bodywork, Glass and Mirrors:</label>
+          <p style="font-size: 0.9em; color: #555; margin: 1px 0 10px;">Includes windscreen, mirrors, lights, and doors.</p>
+          <select id="bodyworkGlassAndMirrors" name="bodyworkGlassAndMirrors" required>
+            <option value="">Select Condition</option>
+            <option value="Good">No visible damage</option>
+            <option value="Okay">Minor scratches/chips</option>
+            <option value="Poor">Cracks, missing parts or unsafe damage</option>
+          </select>
+          <div class="form-group hidden" id="bodyworkOtherContainer">
+            <label for="bodyworkOtherDetails">Please describe the damage:</label>
+            <input type="text" id="bodyworkOtherDetails" name="bodyworkOtherDetails">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Brakes working? (incl lights):</label>
+          <input type="radio" name="brakes" value="Yes" required> Yes
+          <input type="radio" name="brakes" value="No"> No
+        </div>
+        <div class="form-group">
+          <label>Steering and suspension working?</label>
+          <input type="radio" name="steeringSuspension" value="Yes" required> Yes
+          <input type="radio" name="steeringSuspension" value="No"> No
+        </div>
+        <div class="form-group">
+          <label>Lights and reflectors working?</label>
+          <input type="radio" name="lightsReflectors" value="Yes" required> Yes
+          <input type="radio" name="lightsReflectors" value="No"> No
+        </div>
+        <div class="form-group">
+          <label>Dash Lights working?</label>
+          <input type="radio" name="dashLightsWorkingWeekly" value="Yes" required> Yes
+          <input type="radio" name="dashLightsWorkingWeekly" value="No"> No
+        </div>
+        <div class="form-group">
+          <label>Horn working?</label>
+          <input type="radio" name="horn" value="Yes" required> Yes
+          <input type="radio" name="horn" value="No"> No
+        </div>
+        <div class="form-group">
+          <label>Fluid Levels:</label>
+          <div class="fluid-grid-row">
+            <div class="fluid-label">Oil:</div>
+            <label><input type="radio" name="oilLevel" value="Good" required> Good</label>
+            <label><input type="radio" name="oilLevel" value="Needs refilling"> Needs refilling</label>
+          </div>
+          <div class="fluid-grid-row">
+            <div class="fluid-label">Coolant:</div>
+            <label><input type="radio" name="coolantLevel" value="Good" required> Good</label>
+            <label><input type="radio" name="coolantLevel" value="Needs refilling"> Needs refilling</label>
+          </div>
+          <div class="fluid-grid-row">
+            <div class="fluid-label">AdBlue:</div>
+            <label><input type="radio" name="adblueLevel" value="Good" required> Good</label>
+            <label><input type="radio" name="adblueLevel" value="Needs refilling"> Needs refilling</label>
+            <label><input type="radio" name="adblueLevel" value="N/a"> N/a</label>
+          </div>
+          <div class="fluid-grid-row">
+            <div class="fluid-label">Screenwash:</div>
+            <label><input type="radio" name="screenwashLevel" value="Good" required> Good</label>
+            <label><input type="radio" name="screenwashLevel" value="Needs refilling">Needs refilling</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Driver Van Kit and First Aid Kit Present?</label>
+          <input type="radio" name="driverVanKitFirstAid" value="Yes" required> Yes
+          <input type="radio" name="driverVanKitFirstAid" value="No"> No
+        </div>
+        <div class="form-group">
+          <label>Fault or Damage?</label>
+          <input type="radio" name="weeklyFaultOption" value="Yes"> Yes
+          <input type="radio" name="weeklyFaultOption" value="No" checked> No
+        </div>
+        <div class="form-group hidden" id="weeklyFaultDescriptionContainer">
+          <label for="weeklyFaultDescription">Please describe the fault/damage:</label>
+          <input type="text" id="weeklyFaultDescription" name="weeklyFaultDescription">
+        </div>
+        <div class="form-group">
+          <label for="weeklyNotes">Other Notes and Comments:</label>
+          <textarea id="weeklyNotes" name="weeklyNotes" rows="3" placeholder="Optional notes about the vehicle or check..."></textarea>
+        </div>
+      </div>
+      
+      <!-- Step 3: Image Upload -->
+      <div class="step" id="imageUploadStep">
+        <div class="form-group">
+          <label>Add Image(s):</label>
+          <div id="imageOptions">
+            <button type="button" id="uploadDeviceBtn">Upload from Device</button>
+            <button type="button" id="openCameraBtn">Take Photo</button>
+          </div>
+          <p style="font-size: 0.9em; color: #666;">Select images from your device or capture new ones.</p>
+        </div>
+        <input type="file" id="galleryUpload" accept="image/*" multiple style="display:none;">
+        <div id="galleryPreview" class="previewContainer"></div>
+        <div id="capturedPhotos" class="previewContainer"></div>
+      </div>
+      
+      <!-- Step 4: Review -->
+      <div class="step" id="reviewStep">
+        <h3 style="text-align:center;">Review Your Images</h3>
+        <p style="font-size: 0.9em; color: #666; text-align:center;">Click the red delete icon to remove an image.</p>
+        <div id="reviewGallery" class="previewContainer"></div>
+        <div id="reviewCaptured" class="previewContainer"></div>
+      </div>
+      
+      <!-- Step 5: Declaration -->
+      <div class="step" id="declarationStep">
+        <h3 style="text-align:center;">Declaration</h3>
+        <p>I confirm that the above checks have been carried out and I consider the vehicle fit for use.</p>
+        <p>I hereby confirm that I am fit to drive/use this vehicle, that I am aware of the company policies and the law on alcohol and drugs and that I am fully aware of my driving hours rules where relevant.</p>
+        <div class="form-group">
+          <label style="font-weight: normal;">
+            <input type="checkbox" id="declarationCheckbox" name="declaration" value="Signed" required>
+            I agree to the above declarations
+          </label>
+        </div>
+      </div>
+      
+      <!-- Navigation Buttons -->
+      <div id="navigationButtons">
+        <button type="button" id="backBtn">Back</button>
+        <button type="button" id="nextBtn">Next</button>
+      </div>
+    </form>
+    
+    <!-- FAQ Button -->
+    <div id="faqButtonContainer">
+      <button type="button" id="openFaqBtn" onclick="openFaq()">FAQ</button>
+    </div>
+  </div>
+  
+  <!-- FAQ Modal (FAQ text preserved as originally provided) -->
+  <div id="faqModal" class="modal hidden">
+    <div class="modal-content">
+      <span class="close" id="closeFaqModal" onclick="closeFaq()">&times;</span>
+      <div class="faq-content">
+        <h2>Frequently Asked Questions</h2>
+        <h3>Why are vehicle checks necessary?</h3>
+        <p>Regular vehicle checks are a legal requirement under UK health and safety law. Drivers must ensure that their vehicle is safe and roadworthy to prevent accidents and comply with regulations enforced by the DVSA.</p>
+        <h3>What are the two types of checks in this form?</h3>
+        <p><strong>First check with vehicle:</strong> This is a comprehensive inspection conducted at the start of your route. It covers detailed assessments of the vehicle’s mechanical systems, safety equipment, and overall condition.</p>
+        <p><strong>Subsequent daily walk around checks:</strong> These are simplified, visual inspections carried out later during your route to confirm that no new issues have developed.</p>
+        <h3>Do I have to do both checks?</h3>
+        <p>If it is your first time using the vehicle on a given route, you must complete the full <strong>first check with vehicle</strong>. For any additional checks during that route, only a <strong>subsequent daily walk around check</strong> is required unless a new shift begins or a different driver uses the vehicle.</p>
+        <h3>What are my responsibilities as a driver?</h3>
+        <p>You are legally required to check your vehicle before driving. This involves conducting a thorough initial inspection and following up with regular visual checks to ensure ongoing safety. Reporting any faults immediately is a crucial part of your duty to maintain a safe driving environment.</p>
+        <h3>What if I find a defect?</h3>
+        <p>Any faults must be reported immediately using the reporting fields in this form. Do not drive the vehicle until a manager has assessed the issue and confirmed that it is safe to proceed. While faults are automatically and immediately recorded upon submission of the form, it is strongly encouraged that you also contact a company Director (Chris or Anna) to report the issue and seek guidance on the next steps to ensure safety.</p>
+        <h3>How is the information from this form used for vehicle maintenance?</h3>
+        <p>The answers provided in this form feed into a central database, which automatically flags defects and highlights when routine servicing is due. It is important that the form is completed accurately and in full to ensure any issues are picked up quickly and the vehicle remains safe and compliant.</p>
+        <h3>What should I do if I feel too tired or unwell to drive?</h3>
+        <p>While this is not covered directly in the vehicle check form, driver fatigue and general health are important safety considerations. If you feel unwell or too tired to drive safely, this must be reported to a company Director (Chris or Anna) as soon as possible.</p>
+        <h3>What happens if I don’t complete the checks properly?</h3>
+        <p>Completing vehicle checks is a legal requirement and a condition of using company vehicles. Failure to carry out the necessary checks or report faults properly may result in disciplinary action. All submissions are monitored, and any issues will be followed up by management to ensure continued safety and compliance.</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Camera Modal -->
+  <div id="cameraModal" class="modal hidden">
+    <div class="modal-content">
+      <span class="close" id="closeCameraModal">&times;</span>
+      <video id="cameraStream" autoplay></video>
+      <div id="captureStatus" class="hidden">Photo Captured!</div>
+      <div style="margin-top:10px;">
+        <button type="button" id="capturePhotoModalBtn">Capture Photo</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- All initialization and event listener attachments -->
   <script>
-    /***** Set Check Type Based on First Check Question *****/
+    // Global variables for step navigation
+    let currentStep = 0;
+    let steps = [];
+    let galleryFiles = [];
+    let capturedBlobs = [];
+    let stream;
+    const cameraModal = document.getElementById('cameraModal');
+    const cameraStreamEl = document.getElementById('cameraStream');
+    const captureStatus = document.getElementById('captureStatus');
+
+    // Initialize branch and build steps after DOM is ready
+    function initBranch() {
+      if (!document.getElementById("checkType").value) {
+        document.getElementById("checkType").value = "Daily";
+      }
+      adjustSteps();
+      buildStepsArray();
+      console.log("Initial branch set to: " + document.getElementById("checkType").value);
+    }
+    
+    // Set check type based on user selection
     function setCheckType(type) {
       document.getElementById("checkType").value = type;
+      adjustSteps();
+      buildStepsArray();
+      console.log("Branch changed to: " + type);
+    }
+    
+    // Toggle common fields based on branch
+    function toggleFields() {
+      const checkType = document.getElementById("checkType").value;
+      if (checkType === "Weekly") {
+        document.getElementById("currentMileageGroup").classList.remove("hidden");
+      } else {
+        document.getElementById("currentMileageGroup").classList.add("hidden");
+      }
+    }
+    
+    // Adjust which step (daily or weekly) is visible
+    function adjustSteps() {
+      const checkType = document.getElementById("checkType").value;
+      if (checkType === "Weekly") {
+        document.getElementById("dailyStep").classList.add("hidden");
+        document.getElementById("weeklyStep").classList.remove("hidden");
+      } else if (checkType === "Daily") {
+        document.getElementById("dailyStep").classList.remove("hidden");
+        document.getElementById("weeklyStep").classList.add("hidden");
+      }
       toggleFields();
     }
     
-    /***** Toggle Fields Based on Check Type *****/
-    function toggleFields() {
-      const checkType = document.getElementById("checkType").value;
-      const daily = document.getElementById("dailyFields");
-      const weekly = document.getElementById("weeklyFields");
-      if (checkType === "Daily") {
-        daily.classList.remove("hidden");
-        weekly.classList.add("hidden");
-        disableInputs(weekly, true);
-        disableInputs(daily, false);
-      } else if (checkType === "Weekly") {
-        weekly.classList.remove("hidden");
-        daily.classList.add("hidden");
-        disableInputs(daily, true);
-        disableInputs(weekly, false);
-      } else {
-        daily.classList.add("hidden");
-        weekly.classList.add("hidden");
-        disableInputs(daily, true);
-        disableInputs(weekly, true);
-      }
-    }
-    function disableInputs(container, disable) {
-      container.querySelectorAll("input, select, textarea").forEach(input => {
-        input.disabled = disable;
+    // Build steps array based on visible steps
+    function buildStepsArray() {
+      steps = [];
+      document.querySelectorAll('.step').forEach(step => {
+        if (!step.classList.contains("hidden")) {
+          steps.push(step);
+        }
       });
-    }
-    function toggleDriverOther() {
-      const driverSelect = document.getElementById("driverName");
-      const otherContainer = document.getElementById("otherDriverNameContainer");
-      if (driverSelect.value === "Other") {
-        otherContainer.classList.remove("hidden");
-        otherContainer.querySelector("input").disabled = false;
-      } else {
-        otherContainer.classList.add("hidden");
-        otherContainer.querySelector("input").disabled = true;
-      }
-    }
-    /***** FAQ Modal Logic *****/
-    function openFaq() {
-      document.getElementById("faqModal").classList.remove("hidden");
-    }
-    function closeFaq() {
-      document.getElementById("faqModal").classList.add("hidden");
+      currentStep = 0;
+      showStep(currentStep);
+      console.log("Steps built. Total visible steps: " + steps.length);
     }
     
-    /***** Attach Event Listeners for Fault/Damage Radio Buttons *****/
+    // Display a specific step
+    function showStep(index) {
+      steps.forEach((step, i) => {
+        step.classList.toggle('active', i === index);
+      });
+      document.getElementById("progressIndicator").innerText = `Step ${index + 1} of ${steps.length}`;
+      document.getElementById("backBtn").style.visibility = (index === 0) ? "hidden" : "visible";
+      document.getElementById("nextBtn").innerText = (index === steps.length - 1) ? "Submit" : "Next";
+      if (steps[index].id === "reviewStep") {
+        updateReviewPreviews();
+      }
+      console.log("Showing step: " + (index + 1));
+    }
+    
+    // Navigation button event listeners
     document.addEventListener("DOMContentLoaded", function() {
+      // Attach fault option event listeners
       document.querySelectorAll('input[name="dailyFaultOption"]').forEach(radio => {
         radio.addEventListener("change", event => {
           const container = document.getElementById("dailyFaultDescriptionContainer");
@@ -291,303 +674,141 @@
           }
         });
       });
-    });
-    
-    /***** Update imagesUploaded Field When Images are Added *****/
-    function markImagesUploaded() {
-      document.getElementById("imagesUploaded").value = "Yes";
-    }
-  </script>
-</head>
-<body>
-  <div class="container">
-    <!-- Header with logo -->
-    <div class="header">
-      <h2>Vehicle Checks and Maintenance</h2>
-      <img src="logo.png" alt="Logo" class="logo">
-    </div>
-    <div id="progressIndicator">Step 1 of 3</div>
-    <form id="vehicleForm" method="POST" enctype="multipart/form-data">
-      <!-- Hidden field to store check type -->
-      <input type="hidden" id="checkType" name="checkType" />
-      <!-- New hidden field for imagesUploaded -->
-      <input type="hidden" id="imagesUploaded" name="imagesUploaded" value="No">
       
-      <!-- Step 1: Vehicle Details -->
-      <div class="step active" id="step1">
-        <!-- New: First Check Question -->
-        <div class="form-group">
-          <label>Is this your first vehicle check for this vehicle as part of this route?</label>
-          <input type="radio" name="firstCheck" value="Yes" required onclick="setCheckType('Weekly')"> Yes
-          <input type="radio" name="firstCheck" value="No" onclick="setCheckType('Daily')"> No
-        </div>
-        <div class="form-group">
-          <label for="driverName">Driver Name:</label>
-          <select id="driverName" name="driverName" required onchange="toggleDriverOther()">
-            <option value="">Select Driver Name</option>
-            <option value="Mat Roberts">Mat Roberts</option>
-            <option value="Leo Baptiste">Leo Baptiste</option>
-            <option value="Ed Sykes">Ed Sykes</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-        <div class="form-group hidden" id="otherDriverNameContainer">
-          <label for="otherDriverName">Please enter driver name:</label>
-          <input type="text" id="otherDriverName" name="otherDriverName" />
-        </div>
-        <div class="form-group">
-          <label for="vehicleReg">Vehicle Registration:</label>
-          <select id="vehicleReg" name="vehicleReg" required>
-            <option value="">Select Registration</option>
-            <option value="BV72 JVN">BV72 JVN</option>
-            <option value="SN71 AZG">SN71 AZG</option>
-            <option value="MP19 YXK">MP19 YXK</option>
-            <option value="LO19 CGE">LO19 CGE</option>
-            <option value="PY24 LZE">PY24 LZE</option>
-          </select>
-        </div>
-        <!-- Fields for Subsequent Daily Walk Around Checks -->
-        <div id="dailyFields" class="hidden">
-          <div class="form-group">
-            <label><input type="checkbox" name="vehicleWalkAround" value="complete" /> Vehicle Walk Around Completed</label>
-          </div>
-          <div class="form-group">
-            <label><input type="checkbox" name="checkLights" value="complete" /> Lights Checked</label>
-          </div>
-          <div class="form-group">
-            <label><input type="checkbox" name="checkFluidLevels" value="complete" /> Fluid Levels Checked</label>
-          </div>
-          <div class="form-group">
-            <label><input type="checkbox" name="checkTyres" value="complete" /> Tyres Checked</label>
-          </div>
-          <div class="form-group">
-            <label>Fault or Damage?</label>
-            <input type="radio" name="dailyFaultOption" id="dailyFaultYes" value="Yes"> Yes
-            <input type="radio" name="dailyFaultOption" id="dailyFaultNo" value="No" checked> No
-          </div>
-          <div class="form-group hidden" id="dailyFaultDescriptionContainer">
-            <label for="dailyFaultDescription">Please describe the fault/damage:</label>
-            <input type="text" id="dailyFaultDescription" name="dailyFaultDescription">
-          </div>
-        </div>
-        <!-- Fields for First Check with Vehicle -->
-        <div id="weeklyFields" class="hidden">
-          <div class="form-group">
-            <label for="currentMileage">Current Mileage:</label>
-            <input type="number" id="currentMileage" name="currentMileage" required />
-          </div>
-          <div class="form-group">
-            <label for="tyreCondition">Tyre Condition:</label>
-            <select id="tyreCondition" name="tyreCondition" required>
-              <option value="">Select Condition</option>
-              <option value="Very good">Very good</option>
-              <option value="Good">Good</option>
-              <option value="Ok">Ok</option>
-              <option value="Poor">Poor</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="tyrePressure">Tyre Pressure (psi):</label>
-            <input type="number" id="tyrePressure" name="tyrePressure" required />
-          </div>
-          <div class="form-group">
-            <label for="bodyworkGlassAndMirrors">Bodywork, Glass and Mirrors:</label>
-            <select id="bodyworkGlassAndMirrors" name="bodyworkGlassAndMirrors" required>
-              <option value="">Select Condition</option>
-              <option value="Good">Good</option>
-              <option value="Okay">Okay</option>
-              <option value="Poor">Poor</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Brakes working? (incl lights):</label>
-            <input type="radio" name="brakes" id="brakesYes" value="Yes" required> Yes
-            <input type="radio" name="brakes" id="brakesNo" value="No"> No
-          </div>
-          <div class="form-group">
-            <label>Steering and suspension working?</label>
-            <input type="radio" name="steeringSuspension" id="steeringSuspensionYes" value="Yes" required> Yes
-            <input type="radio" name="steeringSuspension" id="steeringSuspensionNo" value="No"> No
-          </div>
-          <div class="form-group">
-            <label>Lights and reflectors working?</label>
-            <input type="radio" name="lightsReflectors" id="lightsReflectorsYes" value="Yes" required> Yes
-            <input type="radio" name="lightsReflectors" id="lightsReflectorsNo" value="No"> No
-          </div>
-          <div class="form-group">
-            <label>Horn working?</label>
-            <input type="radio" name="horn" id="hornYes" value="Yes" required> Yes
-            <input type="radio" name="horn" id="hornNo" value="No"> No
-          </div>
-          <div class="form-group">
-            <label>Fluid Levels:</label>
-            <div class="fluid-group">
-              <label>Oil:</label>
-              <input type="radio" name="oilLevel" value="Good" required> Good
-              <input type="radio" name="oilLevel" value="Needs refilling"> Needs refilling
-            </div>
-            <div class="fluid-group">
-              <label>Coolant:</label>
-              <input type="radio" name="coolantLevel" value="Good" required> Good
-              <input type="radio" name="coolantLevel" value="Needs refilling"> Needs refilling
-            </div>
-            <div class="fluid-group">
-              <label>AdBlue:</label>
-              <input type="radio" name="adblueLevel" value="Good" required> Good
-              <input type="radio" name="adblueLevel" value="Needs refilling"> Needs refilling
-              <input type="radio" name="adblueLevel" value="N/a"> N/a
-            </div>
-            <div class="fluid-group">
-              <label>Screenwash:</label>
-              <input type="radio" name="screenwashLevel" value="Good" required> Good
-              <input type="radio" name="screenwashLevel" value="Needs refilling"> Needs refilling
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Driver Van Kit and First Aid Kit Present?</label>
-            <input type="radio" name="driverVanKitFirstAid" value="Yes" required> Yes
-            <input type="radio" name="driverVanKitFirstAid" value="No"> No
-          </div>
-          <div class="form-group">
-            <label>Fault or Damage?</label>
-            <input type="radio" name="weeklyFaultOption" id="weeklyFaultYes" value="Yes"> Yes
-            <input type="radio" name="weeklyFaultOption" id="weeklyFaultNo" value="No" checked> No
-          </div>
-          <div class="form-group hidden" id="weeklyFaultDescriptionContainer">
-            <label for="weeklyFaultDescription">Please describe the fault/damage:</label>
-            <input type="text" id="weeklyFaultDescription" name="weeklyFaultDescription">
-          </div>
-        </div>
-      </div>
+      // Attach change events for vehicle registration and other fields
+      document.getElementById("vehicleReg").addEventListener("change", updateTyrePressureNote);
+      updateTyrePressureNote();
+      document.getElementById("tyreConditionVisual").addEventListener("change", toggleTyreConditionOther);
+      toggleTyreConditionOther();
+      document.getElementById("bodyworkGlassAndMirrors").addEventListener("change", toggleBodyworkOther);
+      toggleBodyworkOther();
       
-      <!-- Step 2: Image Upload -->
-      <div class="step" id="step2">
-        <div class="form-group">
-          <label>Add Image(s):</label>
-          <div id="imageOptions">
-            <button type="button" id="uploadDeviceBtn">Upload from Device</button>
-            <button type="button" id="openCameraBtn">Take Photo</button>
-          </div>
-          <p style="font-size: 0.9em; color: #666;">Select images from your device or capture new ones.</p>
-        </div>
-        <!-- Hidden file input for device uploads -->
-        <input type="file" id="galleryUpload" accept="image/*" multiple style="display:none;" />
-        <!-- Preview for gallery images -->
-        <div id="galleryPreview" class="previewContainer"></div>
-        <!-- Preview for captured images -->
-        <div id="capturedPhotos" class="previewContainer"></div>
-      </div>
-      
-      <!-- Step 3: Review & Submit -->
-      <div class="step" id="step3">
-        <h3 style="text-align:center;">Review Your Images</h3>
-        <p style="font-size: 0.9em; color: #666; text-align:center;">If you need to remove any image, click the red delete icon.</p>
-        <div id="reviewGallery" class="previewContainer"></div>
-        <div id="reviewCaptured" class="previewContainer"></div>
-      </div>
-      
-      <!-- Navigation Buttons -->
-      <div id="navigationButtons">
-        <button type="button" id="backBtn" class="hidden">Back</button>
-        <button type="button" id="nextBtn">Next</button>
-      </div>
-    </form>
-    
-    <!-- FAQ Button (visible on every page) -->
-    <div id="faqButtonContainer">
-      <button type="button" id="openFaqBtn" onclick="openFaq()">FAQ</button>
-    </div>
-  </div>
-  
-  <!-- FAQ Modal -->
-  <div id="faqModal" class="modal hidden">
-    <div class="modal-content">
-      <span class="close" id="closeFaqModal" onclick="closeFaq()">&times;</span>
-      <div class="faq-content">
-        <h2>Frequently Asked Questions</h2>
-        
-        <h3>Why are vehicle checks necessary?</h3>
-        <p>Regular vehicle checks are a legal requirement under UK health and safety law. Drivers must ensure that their vehicle is safe and roadworthy to prevent accidents and comply with regulations enforced by the DVSA.</p>
-        
-        <h3>What are the two types of checks in this form?</h3>
-        <p><strong>First check with vehicle:</strong> This is a comprehensive inspection conducted at the start of your route. It covers detailed assessments of the vehicle’s mechanical systems, safety equipment, and overall condition.</p>
-        <p><strong>Subsequent daily walk around checks:</strong> These are simplified, visual inspections carried out later during your route to confirm that no new issues have developed.</p>
-        
-        <h3>Do I have to do both checks?</h3>
-        <p>If it is your first time using the vehicle on a given route, you must complete the full <strong>first check with vehicle</strong>. For any additional checks during that route, only a <strong>subsequent daily walk around check</strong> is required unless a new shift begins or a different driver uses the vehicle.</p>
-        
-        <h3>What are my responsibilities as a driver?</h3>
-        <p>You are legally required to check your vehicle before driving. This involves conducting a thorough initial inspection and following up with regular visual checks to ensure ongoing safety. Reporting any faults immediately is a crucial part of your duty to maintain a safe driving environment.</p>
-        
-        <h3>What if I find a defect?</h3>
-        <p>Any faults must be reported immediately using the reporting fields in this form. Do not drive the vehicle until a manager has assessed the issue and confirmed that it is safe to proceed. While faults are automatically and immediately recorded upon submission of the form, it is strongly encouraged that you also contact a company Director (Chris or Anna) to report the issue and seek guidance on the next steps to ensure safety.</p>
-        
-        <h3>How is the information from this form used for vehicle maintenance?</h3>
-        <p>The answers provided in this form feed into a central database, which automatically flags defects and highlights when routine servicing is due. It is important that the form is completed accurately and in full to ensure any issues are picked up quickly and the vehicle remains safe and compliant.</p>
-        
-        <h3>What should I do if I feel too tired or unwell to drive?</h3>
-        <p>While this is not covered directly in the vehicle check form, driver fatigue and general health are important safety considerations. If you feel unwell or too tired to drive safely, this must be reported to a company Director (Chris or Anna) as soon as possible.</p>
-        
-        <h3>What happens if I don’t complete the checks properly?</h3>
-        <p>Completing vehicle checks is a legal requirement and a condition of using company vehicles. Failure to carry out the necessary checks or report faults properly may result in disciplinary action. All submissions are monitored, and any issues will be followed up by management to ensure continued safety and compliance.</p>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Modal for Camera Interface -->
-  <div id="cameraModal" class="modal hidden">
-    <div class="modal-content">
-      <span class="close" id="closeCameraModal">&times;</span>
-      <video id="cameraStream" autoplay></video>
-      <div id="captureStatus" class="hidden">Photo Captured!</div>
-      <div style="margin-top:10px;">
-        <button type="button" id="capturePhotoModalBtn">Capture Photo</button>
-      </div>
-    </div>
-  </div>
-  
-  <script>
-    /***** STEP-WIZARD NAVIGATION *****/
-    const steps = document.querySelectorAll('.step');
-    const progressIndicator = document.getElementById('progressIndicator');
-    const backBtn = document.getElementById('backBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    let currentStep = 0;
-    
-    function showStep(index) {
-      steps.forEach((step, i) => {
-        step.classList.toggle('active', i === index);
+      // Attach navigation button events
+      document.getElementById("backBtn").addEventListener('click', () => {
+        if (currentStep > 0) {
+          currentStep--;
+          showStep(currentStep);
+        }
       });
-      progressIndicator.innerText = `Step ${index + 1} of ${steps.length}`;
-      backBtn.classList.toggle('hidden', index === 0);
-      nextBtn.innerText = (index === steps.length - 1) ? "Submit" : "Next";
-      if(index === 2) { updateReviewPreviews(); }
+      document.getElementById("nextBtn").addEventListener('click', () => {
+        if (currentStep < steps.length - 1) {
+          currentStep++;
+          showStep(currentStep);
+        } else {
+          submitForm();
+        }
+      });
+      
+      // Attach image upload event listeners
+      document.getElementById('uploadDeviceBtn').addEventListener('click', () => {
+        document.getElementById('galleryUpload').click();
+      });
+      document.getElementById('galleryUpload').addEventListener('change', function() {
+        Array.from(this.files).forEach(file => galleryFiles.push(file));
+        updateGalleryPreview();
+        markImagesUploaded();
+        this.value = "";
+      });
+      
+      // Attach camera modal event listeners
+      document.getElementById('openCameraBtn').addEventListener('click', async () => {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+          cameraStreamEl.srcObject = stream;
+          cameraModal.classList.remove('hidden');
+        } catch (err) {
+          console.error("Error accessing camera:", err);
+          alert("Could not access the camera.");
+        }
+      });
+      document.getElementById('closeCameraModal').addEventListener('click', () => {
+        if (stream) { stream.getTracks().forEach(track => track.stop()); }
+        cameraModal.classList.add('hidden');
+      });
+      document.getElementById('capturePhotoModalBtn').addEventListener('click', () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = cameraStreamEl.videoWidth;
+        canvas.height = cameraStreamEl.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(cameraStreamEl, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob => {
+          capturedBlobs.push(blob);
+          updateCapturedPreview();
+          markImagesUploaded();
+          captureStatus.classList.remove('hidden');
+          setTimeout(() => { captureStatus.classList.add('hidden'); }, 2000);
+        }, 'image/jpeg');
+      });
+      
+      // Finally, initialize branch and build steps
+      initBranch();
+    });
+    
+    // Toggle driver "Other" field
+    function toggleDriverOther() {
+      const driverSelect = document.getElementById("driverName");
+      const otherContainer = document.getElementById("otherDriverNameContainer");
+      if (driverSelect.value === "Other") {
+        otherContainer.classList.remove("hidden");
+        otherContainer.querySelector("input").disabled = false;
+      } else {
+        otherContainer.classList.add("hidden");
+        otherContainer.querySelector("input").disabled = true;
+      }
     }
     
-    backBtn.addEventListener('click', () => {
-      if(currentStep > 0) { currentStep--; showStep(currentStep); }
-    });
+    // Toggle optional tyre condition details
+    function toggleTyreConditionOther() {
+      const select = document.getElementById("tyreConditionVisual");
+      const container = document.getElementById("tyreConditionOtherContainer");
+      const input = document.getElementById("tyreConditionOtherDetails");
+      if (select.value === "Poor") {
+        container.classList.remove("hidden");
+        input.disabled = false;
+      } else {
+        container.classList.add("hidden");
+        input.disabled = true;
+        input.value = "";
+      }
+    }
+    function toggleBodyworkOther() {
+      const select = document.getElementById("bodyworkGlassAndMirrors");
+      const container = document.getElementById("bodyworkOtherContainer");
+      const input = document.getElementById("bodyworkOtherDetails");
+      if (select.value === "Poor") {
+        container.classList.remove("hidden");
+        input.disabled = false;
+      } else {
+        container.classList.add("hidden");
+        input.disabled = true;
+        input.value = "";
+      }
+    }
     
-    nextBtn.addEventListener('click', () => {
-      if(currentStep < steps.length - 1) { currentStep++; showStep(currentStep); }
-      else { submitForm(); }
-    });
+    // Update tyre pressure recommendation note based on registration
+    function updateTyrePressureNote() {
+      const regDropdown = document.getElementById("vehicleReg");
+      const selectedOption = regDropdown.value;
+      const noteField = document.getElementById("tyrePressureNote");
+      const recommendations = {
+        "BV72 JVN": "Recommended: Front 59 psi, Rear 61 psi",
+        "SN71 AZG": "Recommended: Front 52 psi, Rear 65 psi",
+        "MP19 YXK": "Recommended: Front 65 psi, Rear 73 psi",
+        "LO19 CGE": "Recommended: Front 65 psi, Rear 73 psi",
+        "PY24 LZE": "Recommended: Front 51 psi, Rear 71 psi"
+      };
+      noteField.innerText = recommendations[selectedOption] || "";
+    }
     
-    /***** IMAGE HANDLING *****/
-    let galleryFiles = [];
-    let capturedBlobs = [];
+    // FAQ modal functions (FAQ text preserved as originally provided)
+    function openFaq() {
+      document.getElementById("faqModal").classList.remove("hidden");
+    }
+    function closeFaq() {
+      document.getElementById("faqModal").classList.add("hidden");
+    }
     
-    // Gallery uploads
-    document.getElementById('uploadDeviceBtn').addEventListener('click', () => {
-      document.getElementById('galleryUpload').click();
-    });
-    document.getElementById('galleryUpload').addEventListener('change', function() {
-      Array.from(this.files).forEach(file => galleryFiles.push(file));
-      updateGalleryPreview();
-      // Mark that images were uploaded
-      markImagesUploaded();
-      this.value = "";
-    });
+    // Image preview functions
     function updateGalleryPreview() {
       const previewContainer = document.getElementById('galleryPreview');
       previewContainer.innerHTML = "";
@@ -605,47 +826,6 @@
         previewContainer.appendChild(previewItem);
       });
     }
-    
-    // Modal camera interface
-    const cameraModal = document.getElementById('cameraModal');
-    const closeCameraModal = document.getElementById('closeCameraModal');
-    const cameraStreamEl = document.getElementById('cameraStream');
-    const capturePhotoModalBtn = document.getElementById('capturePhotoModalBtn');
-    const captureStatus = document.getElementById('captureStatus');
-    let stream;
-    
-    document.getElementById('openCameraBtn').addEventListener('click', async () => {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        cameraStreamEl.srcObject = stream;
-        cameraModal.classList.remove('hidden');
-      } catch (err) {
-        console.error("Error accessing camera:", err);
-        alert("Could not access the camera.");
-      }
-    });
-    closeCameraModal.addEventListener('click', () => {
-      if(stream) { stream.getTracks().forEach(track => track.stop()); }
-      cameraModal.classList.add('hidden');
-    });
-    
-    capturePhotoModalBtn.addEventListener('click', () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = cameraStreamEl.videoWidth;
-      canvas.height = cameraStreamEl.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(cameraStreamEl, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(blob => {
-        capturedBlobs.push(blob);
-        updateCapturedPreview();
-        // Mark that images were uploaded
-        markImagesUploaded();
-        // Show the "Photo Captured!" overlay for 2 seconds
-        captureStatus.classList.remove('hidden');
-        setTimeout(() => { captureStatus.classList.add('hidden'); }, 2000);
-      }, 'image/jpeg');
-    });
-    
     function updateCapturedPreview() {
       const previewContainer = document.getElementById('capturedPhotos');
       previewContainer.innerHTML = "";
@@ -663,8 +843,6 @@
         previewContainer.appendChild(previewItem);
       });
     }
-    
-    /***** REVIEW STEP *****/
     function updateReviewPreviews() {
       const reviewGallery = document.getElementById('reviewGallery');
       const reviewCaptured = document.getElementById('reviewCaptured');
@@ -698,17 +876,20 @@
       });
     }
     
-    /***** FORM SUBMISSION *****/
+    // Submit form function
     function submitForm() {
-      nextBtn.disabled = true;
-      nextBtn.innerHTML = '<span class="spinner"></span> Submitting...';
+      if (!document.getElementById("declarationCheckbox").checked) {
+        alert("You must agree to the declaration before submitting the form.");
+        return;
+      }
+      document.getElementById("nextBtn").disabled = true;
+      document.getElementById("nextBtn").innerHTML = '<span class="spinner"></span> Submitting...';
       const date = new Date().toISOString();
       const formData = new FormData(document.getElementById('vehicleForm'));
       formData.append("timestamp", date);
-      const url = "https://script.google.com/macros/s/AKfycbz27uHsfIg-kUPlUGd4rvoVM14aBHgp_xHAzBw9-1Ky9Vb9oxdq7G74sy0yPwYDpQirPg/exec";
+      const url = "https://script.google.com/macros/s/AKfycbwMhbEbczBagfYs_mRVT6HJbVC_hSAEnbvvxZMdUOESzzeqjtHk0JQQ4qAoBANfxyw8Nw/exec";
       const promises = [];
       
-      // Process gallery files
       galleryFiles.forEach((file, i) => {
         const fname = formData.get('vehicleReg').replace(" ", "") + "_" + date + "_" + i + "." + file.name.split('.').pop();
         promises.push(new Promise((resolve, reject) => {
@@ -728,7 +909,6 @@
         }));
       });
       
-      // Process captured blobs
       capturedBlobs.forEach((blob, i) => {
         const fname = formData.get('vehicleReg').replace(" ", "") + "_" + date + "_captured_" + i + ".jpg";
         promises.push(new Promise((resolve, reject) => {
@@ -748,7 +928,6 @@
         }));
       });
       
-      // Submit non-file form data
       promises.push(
         fetch(url, {
           method: "POST",
@@ -765,21 +944,18 @@
           updateGalleryPreview();
           updateCapturedPreview();
           updateReviewPreviews();
-          nextBtn.disabled = false;
-          nextBtn.innerText = "Submit";
+          document.getElementById("nextBtn").disabled = false;
+          document.getElementById("nextBtn").innerText = "Submit";
           currentStep = 0;
-          showStep(currentStep);
+          buildStepsArray();
         })
         .catch(error => {
           console.error("Submission error:", error);
           alert("Submission failed. Please try again.");
-          nextBtn.disabled = false;
-          nextBtn.innerText = "Submit";
+          document.getElementById("nextBtn").disabled = false;
+          document.getElementById("nextBtn").innerText = "Submit";
         });
     }
-    
-    // Initialize first step
-    showStep(currentStep);
   </script>
 </body>
 </html>
