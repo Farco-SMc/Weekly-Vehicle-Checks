@@ -13,9 +13,9 @@
       margin-bottom: 20px;
     }
     .logo {
-      max-height: 35px; /* Adjust this value to scale the logo */
+      max-height: 40px; /* Adjust this value to scale the logo */
       width: auto;
-      margin-left: 15px;
+      margin-left: 20px;
     }
     /* Base styling */
     body {
@@ -528,7 +528,7 @@
     </div>
   </div>
   
-  <!-- FAQ Modal (FAQ text preserved as originally provided) -->
+  <!-- FAQ Modal -->
   <div id="faqModal" class="modal hidden">
     <div class="modal-content">
       <span class="close" id="closeFaqModal" onclick="closeFaq()">&times;</span>
@@ -567,9 +567,13 @@
     </div>
   </div>
   
-  <!-- All initialization and event listener attachments -->
   <script>
-    // Global variables for step navigation
+    // Add the markImagesUploaded function so the hidden field is updated when images are added
+    function markImagesUploaded() {
+      document.getElementById("imagesUploaded").value = "Yes";
+    }
+    
+    // Global variables for step navigation and image handling
     let currentStep = 0;
     let steps = [];
     let galleryFiles = [];
@@ -800,7 +804,7 @@
       noteField.innerText = recommendations[selectedOption] || "";
     }
     
-    // FAQ modal functions (FAQ text preserved as originally provided)
+    // FAQ modal functions
     function openFaq() {
       document.getElementById("faqModal").classList.remove("hidden");
     }
