@@ -325,6 +325,12 @@
         </span>
         </div>
         <div class="form-group">
+          <label><input type="checkbox" name="checkBrakes" value="checked"> Brakes Checked</label>
+          <span style="font-weight: normal; font-size: 0.85em; color: #555;">
+          Test that the brakes are functioning before setting off.
+        </span>
+        </div>
+        <div class="form-group">
           <label>Fault or Damage?</label>
           <input type="radio" name="dailyFaultOption" value="Yes" id="dailyFaultYes"> Yes
           <input type="radio" name="dailyFaultOption" value="No" id="dailyFaultNo" checked> No
@@ -568,11 +574,6 @@
   </div>
   
   <script>
-    // Add the markImagesUploaded function so the hidden field is updated when images are added
-    function markImagesUploaded() {
-      document.getElementById("imagesUploaded").value = "Yes";
-    }
-    
     // Global variables for step navigation and image handling
     let currentStep = 0;
     let steps = [];
@@ -582,6 +583,102 @@
     const cameraModal = document.getElementById('cameraModal');
     const cameraStreamEl = document.getElementById('cameraStream');
     const captureStatus = document.getElementById('captureStatus');
+
+    // Helper function to validate required fields for the current step.
+    // Skips hidden, disabled fields as well as the "other notes and comments" fields and file inputs.
+   function validateStep(stepElement) {
+      let valid = true;
+      const radioValidated = new Set();
+      const inputs = stepElement.querySelectorAll("input, select, textarea");
+
+      inputs.forEach(input => {
+        if (input.disabled) return;
+        if (input.offsetParent === null) return; // not visible
+
+        // For the daily branch, require all checkboxes to be checked.
+        if (stepElement.id === "dailyStep" && input.type === "checkbox") {
+          if (!input.checked) {
+            valid = false;
+            return;
+          }
+        }
+
+        // Skip the optional notes fields.
+        if ((input.id === "dailyNotes" || input.id === "weeklyNotes") && input.tagName.toLowerCase() === "textarea") return;
+        // Skip file inputs (images) since they are optional.
+        if (input.type === "file") return;
+        if (input.hasAttribute("required")) {
+          // For radio buttons, ensure one in the group is checked.
+          if (input.type === "radio") {
+            if (!radioValidated.has(input.name)) {
+              const radios = stepElement.querySelectorAll(`input[name="${input.name}"]`);
+              const isChecked = Array.from(radios).some(radio => radio.checked);
+              if (!isChecked) {
+                valid = false;
+                radioValidated.add(input.name);
+              }
+            }
+          } else {
+            if (input.value.trim() === "") {
+              valid = false;
+            }
+          }
+        }
+      });
+
+      // Additional check: For Weekly branch in commonDetails, ensure mileage is provided.
+      if (document.getElementById("checkType").value === "Weekly" && stepElement.id === "commonDetails") {
+        const mileageInput = document.getElementById("currentMileage");
+        if (mileageInput && mileageInput.value.trim() === "") {
+          valid = false;
+        }
+      }
+
+      // Weekly-specific validations.
+      if (stepElement.id === "weeklyStep") {
+        const tyreConditionSelect = document.getElementById("tyreConditionVisual");
+        if (tyreConditionSelect && tyreConditionSelect.value === "Poor") {
+          const tyreConditionOther = document.getElementById("tyreConditionOtherDetails");
+          if (!tyreConditionOther || tyreConditionOther.value.trim() === "") {
+            valid = false;
+          }
+        }
+        const bodyworkSelect = document.getElementById("bodyworkGlassAndMirrors");
+        if (bodyworkSelect && bodyworkSelect.value === "Poor") {
+          const bodyworkOther = document.getElementById("bodyworkOtherDetails");
+          if (!bodyworkOther || bodyworkOther.value.trim() === "") {
+            valid = false;
+          }
+        }
+        // Weekly fault reporting check.
+        const weeklyFaultRadios = stepElement.querySelectorAll('input[name="weeklyFaultOption"]');
+        const selectedWeeklyFault = Array.from(weeklyFaultRadios).find(radio => radio.checked);
+        if (!selectedWeeklyFault) {
+          valid = false;
+        } else if (selectedWeeklyFault.value === "Yes") {
+          const faultDescWeekly = document.getElementById("weeklyFaultDescription");
+          if (!faultDescWeekly || faultDescWeekly.value.trim() === "") {
+            valid = false;
+          }
+        }
+      }
+
+      // Daily fault reporting check.
+      if (stepElement.id === "dailyStep") {
+        const dailyFaultRadios = stepElement.querySelectorAll('input[name="dailyFaultOption"]');
+        const selectedDailyFault = Array.from(dailyFaultRadios).find(radio => radio.checked);
+        if (!selectedDailyFault) {
+          valid = false;
+        } else if (selectedDailyFault.value === "Yes") {
+          const faultDescDaily = document.getElementById("dailyFaultDescription");
+          if (!faultDescDaily || faultDescDaily.value.trim() === "") {
+            valid = false;
+          }
+        }
+      }
+
+      return valid;
+    }
 
     // Initialize branch and build steps after DOM is ready
     function initBranch() {
@@ -611,15 +708,32 @@
       }
     }
     
-    // Adjust which step (daily or weekly) is visible
+    function disableInputsForStep(stepId, disable) {
+      const step = document.getElementById(stepId);
+      if (step) {
+        step.querySelectorAll("input, select, textarea").forEach(input => {
+          input.disabled = disable;
+        });
+      }
+    }
+
+    // Updated adjustSteps() function to disable inputs for the non-active branch
     function adjustSteps() {
       const checkType = document.getElementById("checkType").value;
       if (checkType === "Weekly") {
+        // Hide and disable the daily step so its values won't be submitted
         document.getElementById("dailyStep").classList.add("hidden");
+        disableInputsForStep("dailyStep", true);
+        // Show and enable the weekly step
         document.getElementById("weeklyStep").classList.remove("hidden");
+        disableInputsForStep("weeklyStep", false);
       } else if (checkType === "Daily") {
+        // Show and enable the daily step
         document.getElementById("dailyStep").classList.remove("hidden");
+        disableInputsForStep("dailyStep", false);
+        // Hide and disable the weekly step so its values won't be submitted
         document.getElementById("weeklyStep").classList.add("hidden");
+        disableInputsForStep("weeklyStep", true);
       }
       toggleFields();
     }
@@ -651,7 +765,7 @@
       console.log("Showing step: " + (index + 1));
     }
     
-    // Navigation button event listeners
+    // Navigation button event listeners setup
     document.addEventListener("DOMContentLoaded", function() {
       // Attach fault option event listeners
       document.querySelectorAll('input[name="dailyFaultOption"]').forEach(radio => {
@@ -687,19 +801,27 @@
       document.getElementById("bodyworkGlassAndMirrors").addEventListener("change", toggleBodyworkOther);
       toggleBodyworkOther();
       
-      // Attach navigation button events
-      document.getElementById("backBtn").addEventListener('click', () => {
-        if (currentStep > 0) {
-          currentStep--;
-          showStep(currentStep);
-        }
-      });
+      // Replace the existing Next button event listener with the updated version below:
       document.getElementById("nextBtn").addEventListener('click', () => {
+        const currentStepElement = steps[currentStep];
+        // Validate the current step; if validation fails, alert and do not proceed.
+        if (!validateStep(currentStepElement)) {
+          alert("Please fill in all required fields before moving on.");
+          return;
+        }
         if (currentStep < steps.length - 1) {
           currentStep++;
           showStep(currentStep);
         } else {
           submitForm();
+        }
+      });
+      
+      // Attach Back button event listener
+      document.getElementById("backBtn").addEventListener('click', () => {
+        if (currentStep > 0) {
+          currentStep--;
+          showStep(currentStep);
         }
       });
       
@@ -795,11 +917,11 @@
       const selectedOption = regDropdown.value;
       const noteField = document.getElementById("tyrePressureNote");
       const recommendations = {
-        "BV72 JVN": "Recommended: Front 59 psi, Rear 61 psi",
-        "SN71 AZG": "Recommended: Front 52 psi, Rear 65 psi",
-        "MP19 YXK": "Recommended: Front 65 psi, Rear 73 psi",
-        "LO19 CGE": "Recommended: Front 65 psi, Rear 73 psi",
-        "PY24 LZE": "Recommended: Front 51 psi, Rear 71 psi"
+        "BV72 JVN": "Recommended: Front 55 psi, Rear 67 psi",
+        "SN71 AZG": "Recommended: Front 55 psi, Rear 67 psi",
+        "MP19 YXK": "Recommended: Front 65 psi, Rear 72.3 psi",
+        "LO19 CGE": "Recommended: Front 65 psi, Rear 72.3 psi",
+        "PY24 LZE": "Recommended: Front 55 psi, Rear 67 psi"
       };
       noteField.innerText = recommendations[selectedOption] || "";
     }
@@ -813,6 +935,9 @@
     }
     
     // Image preview functions
+    function markImagesUploaded() {
+      document.getElementById("imagesUploaded").value = "Yes";
+    }
     function updateGalleryPreview() {
       const previewContainer = document.getElementById('galleryPreview');
       previewContainer.innerHTML = "";
@@ -891,7 +1016,7 @@
       const date = new Date().toISOString();
       const formData = new FormData(document.getElementById('vehicleForm'));
       formData.append("timestamp", date);
-      const url = "https://script.google.com/macros/s/AKfycbwMhbEbczBagfYs_mRVT6HJbVC_hSAEnbvvxZMdUOESzzeqjtHk0JQQ4qAoBANfxyw8Nw/exec";
+      const url = "https://script.google.com/macros/s/AKfycbwqYiulpH2h0t8SRNJug0TJP6z7QHSq8_5Vn43n-aEv6GFQQlyJquoHlkr7xHnxTOjHEQ/exec";
       const promises = [];
       
       galleryFiles.forEach((file, i) => {
