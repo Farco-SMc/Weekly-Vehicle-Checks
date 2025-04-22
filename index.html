@@ -13,7 +13,7 @@
       margin-bottom: 20px;
     }
     .logo {
-      max-height: 35px; /* Adjust this value to scale the logo */
+      max-height: 40px; /* Adjust this value to scale the logo */
       width: auto;
       margin-left: 20px;
     }
@@ -277,14 +277,19 @@
         </div>
         <div class="form-group">
           <label for="vehicleReg">Vehicle Registration:</label>
-          <select id="vehicleReg" name="vehicleReg" required onchange="updateTyrePressureNote()">
+          <select id="vehicleReg" name="vehicleReg" required onchange="toggleVanOther()" required onchange="updateTyrePressureNote()">
             <option value="">Select Registration</option>
             <option value="BV72 JVN">BV72 JVN - Black Renault Master</option>
             <option value="SN71 AZG">SN71 AZG - Grey Nissan Luton</option>
             <option value="MP19 YXK">MP19 YXK - White Citroen Relay</option>
             <option value="LO19 CGE">LO19 CGE - Black Citroen Relay</option>
             <option value="PY24 LZE">PY24 LZE - White Maxus</option>
+            <option value="Rental Van">Rental Van</option>
           </select>
+        </div>
+        <div class="form-group hidden" id="rentalVanContainer">
+          <label for="rentalVanName">Please enter rental van registration, make and model:</label>
+          <input type="text" id="rentalVanName" name="rentalVanName">
         </div>
         <div class="form-group hidden" id="currentMileageGroup">
           <label for="currentMileage">Current Mileage:</label>
@@ -882,6 +887,18 @@
         otherContainer.querySelector("input").disabled = true;
       }
     }
+
+    function toggleVanOther() {
+      const driverSelect = document.getElementById("vehicleReg");
+      const otherContainer = document.getElementById("rentalVanContainer");
+      if (driverSelect.value === "Rental Van") {
+        otherContainer.classList.remove("hidden");
+        otherContainer.querySelector("input").disabled = false;
+      } else {
+        otherContainer.classList.add("hidden");
+        otherContainer.querySelector("input").disabled = true;
+      }
+    }
     
     // Toggle optional tyre condition details
     function toggleTyreConditionOther() {
@@ -1016,7 +1033,7 @@
       const date = new Date().toISOString();
       const formData = new FormData(document.getElementById('vehicleForm'));
       formData.append("timestamp", date);
-      const url = "https://script.google.com/macros/s/AKfycbwqYiulpH2h0t8SRNJug0TJP6z7QHSq8_5Vn43n-aEv6GFQQlyJquoHlkr7xHnxTOjHEQ/exec";
+      const url = "https://script.google.com/macros/s/AKfycbwcxQA4Cg_mUQ5d9ZdC26zNDZvGlZNIfBTEiQM3LS1oUgIQDnjT4IJuuLUcNDVMpcZsOQ/exec";
       const promises = [];
       
       galleryFiles.forEach((file, i) => {
