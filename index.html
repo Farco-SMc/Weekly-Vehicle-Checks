@@ -177,9 +177,12 @@
       position: absolute;
       top: 5px;
       right: 10px;
-      font-size: 28px;
+      font-size: 36px;
       cursor: pointer;
       color: #aaa;
+      padding: 10px;
+      line-height: 1;
+      z-index: 10;            /* ← NEW: keeps button on top so it receives the click */
     }
     #captureStatus {
       position: absolute;
@@ -352,26 +355,30 @@
       
       <!-- Step 2b: Weekly Check Fields (for Weekly branch) -->
       <div class="step hidden" id="weeklyStep">
-        <div class="form-group">
+       <div class="form-group">
           <label>Tyre Pressure (psi):</label>
           <p style="font-size: 0.9em; color: #555; margin: -2px 0 10px;">Orientation is from the perspective of driving the vehicle.</p>
           <p id="tyrePressureNote" style="font-size: 0.9em; color: #333; font-weight: bold;"></p>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
             <div>
               <label for="tyrePressureFrontLeft">Front Left:</label>
-              <input type="text" id="tyrePressureFrontLeft" name="tyrePressureFrontLeft" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+              <input type="text" id="tyrePressureFrontLeft" name="tyrePressureFrontLeft" inputmode="decimal"
+                pattern="[0-9]+(\.[0-9]{1,2})?" oninput="this.value = this.value.replace(/[^0-9.]/g, '')" required>
             </div>
             <div>
               <label for="tyrePressureFrontRight">Front Right:</label>
-              <input type="text" id="tyrePressureFrontRight" name="tyrePressureFrontRight" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+              <input type="text" id="tyrePressureFrontRight" name="tyrePressureFrontRight" inputmode="decimal"
+                pattern="[0-9]+(\.[0-9]{1,2})?" oninput="this.value = this.value.replace(/[^0-9.]/g, '')" required>
             </div>
             <div>
               <label for="tyrePressureBackLeft">Back Left:</label>
-              <input type="text" id="tyrePressureBackLeft" name="tyrePressureBackLeft" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+              <input type="text" id="tyrePressureBackLeft" name="tyrePressureBackLeft" inputmode="decimal"
+                pattern="[0-9]+(\.[0-9]{1,2})?" oninput="this.value = this.value.replace(/[^0-9.]/g, '')" required>
             </div>
             <div>
               <label for="tyrePressureBackRight">Back Right:</label>
-              <input type="text" id="tyrePressureBackRight" name="tyrePressureBackRight" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+              <input type="text" id="tyrePressureBackRight" name="tyrePressureBackRight" inputmode="decimal"
+                pattern="[0-9]+(\.[0-9]{1,2})?" oninput="this.value = this.value.replace(/[^0-9.]/g, '')" required>
             </div>
           </div>
         </div>
