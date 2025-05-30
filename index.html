@@ -13,7 +13,7 @@
       margin-bottom: 20px;
     }
     .logo {
-      max-height: 40px; /* Adjust this value to scale the logo */
+      max-height: 35px; /* Adjust this value to scale the logo */
       width: auto;
       margin-left: 20px;
     }
@@ -183,6 +183,12 @@
       padding: 10px;
       line-height: 1;
       z-index: 10;            /* ← NEW: keeps button on top so it receives the click */
+    }
+    @media (max-width: 600px) {          /* adjust breakpoint if needed */
+      .modal-content .close {
+        font-size: 44px;  /* <— make larger on small screens */
+        padding: 14px;    /* a bit more tap target */
+      }
     }
     #captureStatus {
       position: absolute;
