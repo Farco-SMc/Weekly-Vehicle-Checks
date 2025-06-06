@@ -13,7 +13,7 @@
       margin-bottom: 20px;
     }
     .logo {
-      max-height: 35px; /* Adjust this value to scale the logo */
+      max-height: 35px;
       width: auto;
       margin-left: 20px;
     }
@@ -163,8 +163,7 @@
       text-align: left;
       max-width: 90%;
       width: 400px;
-    }
-    .faq-content {
+
       max-height: 80vh;
       overflow-y: auto;
     }
@@ -182,13 +181,7 @@
       color: #aaa;
       padding: 10px;
       line-height: 1;
-      z-index: 10;            /* ← NEW: keeps button on top so it receives the click */
-    }
-    @media (max-width: 600px) {          /* adjust breakpoint if needed */
-      .modal-content .close {
-        font-size: 44px;  /* <— make larger on small screens */
-        padding: 14px;    /* a bit more tap target */
-      }
+      z-index: 10; /* ensures click */
     }
     #captureStatus {
       position: absolute;
@@ -245,10 +238,83 @@
     textarea#weeklyNotes {
       font-family: "Gill Sans", sans-serif;
     }
+    /* ────────────────────────────────────────────── */
+      /* Breakdowns: toggle buttons (active vs. normal) */
+      /* ────────────────────────────────────────────── */
+      #btnReportBreakdown,
+      #btnUpdateBreakdown {
+        background-color: #f0f0f0;
+        color: #34434c;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-right: 8px;
+      }
+      #btnReportBreakdown.active,
+      #btnUpdateBreakdown.active {
+        background-color: #f7941d;
+        color: #fff;
+        border-color: #d77c15;
+      }
+
+      /* ────────────────────────────────────────────── */
+      /* Breakdowns: date + time side‐by‐side inputs   */
+      /* ────────────────────────────────────────────── */
+      .date-time-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .date-time-group input {
+        flex: 1;
+      }
+
+      /* ────────────────────────────────────────────── */
+      /* Breakdowns: “not safe” warning text           */
+      /* ────────────────────────────────────────────── */
+      #safePlaceWarning {
+        margin-top: 10px;
+        padding: 10px;
+        background-color: #ffe5e5;
+        border: 1px solid #ffcccc;
+        border-radius: 4px;
+        font-size: 0.9em;
+        color: #a94442;
+      }
   </style>
 </head>
 <body>
-  <div class="container">
+  <!-- ======================= -->
+  <!-- LANDING PAGE SECTION   -->
+  <!-- ======================= -->
+  <div id="landingPage" class="container">
+     <div class="header" style="justify-content: center; margin-bottom: 20px;">
+    <img src="logo.png" alt="Logo" class="logo" style="max-height: 50px;">
+  </div>
+  <h2 style="text-align: center;" >Please Select an Option</h2>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 20px;">
+      <button id="btnVehicleChecks" style="width: 200px; text-align: center;">
+        Vehicle Checks
+      </button>
+      <button id="btnBreakdowns" style="width: 200px; text-align: center;">
+        Breakdowns
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================ -->
+  <!-- VEHICLE CHECKS SECTION       -->
+  <!-- ============================ -->
+  <div id="vehicleChecksSection" class="container hidden">
+    <!-- Back to Home Button -->
+    <div style="margin-bottom: 20px;">
+      <button id="btnBackToHomeFromVehicle" style="background:none; border:none; color:#f7941d; font-size:16px; cursor:pointer;">
+        &larr; Back to Home
+      </button>
+    </div>
+
     <div class="header">
       <h2>Vehicle Checks and Maintenance</h2>
       <img src="logo.png" alt="Logo" class="logo">
@@ -282,11 +348,11 @@
         </div>
         <div class="form-group hidden" id="otherDriverNameContainer">
           <label for="otherDriverName">Please enter driver name:</label>
-          <input type="text" id="otherDriverName" name="otherDriverName">
+          <input type="text" id="otherDriverName" name="otherDriverName" disabled>
         </div>
         <div class="form-group">
           <label for="vehicleReg">Vehicle Registration:</label>
-          <select id="vehicleReg" name="vehicleReg" required onchange="toggleVanOther()" required onchange="updateTyrePressureNote()">
+          <select id="vehicleReg" name="vehicleReg" required onchange="toggleVanOther(); updateTyrePressureNote();">
             <option value="">Select Registration</option>
             <option value="BV72 JVN">BV72 JVN - Black Renault Master</option>
             <option value="SN71 AZG">SN71 AZG - Grey Nissan Luton</option>
@@ -298,7 +364,7 @@
         </div>
         <div class="form-group hidden" id="rentalVanContainer">
           <label for="rentalVanName">Please enter rental van registration, make and model:</label>
-          <input type="text" id="rentalVanName" name="rentalVanName">
+          <input type="text" id="rentalVanName" name="rentalVanName" disabled>
         </div>
         <div class="form-group hidden" id="currentMileageGroup">
           <label for="currentMileage">Current Mileage:</label>
@@ -307,42 +373,42 @@
       </div>
       
       <!-- Step 2a: Daily Check Fields (for Daily branch) -->
-      <div class="step" id="dailyStep">
+      <div class="step hidden" id="dailyStep">
         <div class="form-group">
           <label><input type="checkbox" name="vehicleWalkAround" value="complete"> Vehicle Walk Around Completed</label>
           <span style="font-weight: normal; font-size: 0.85em; color: #555;">
-          Visually inspect the exterior, checking for any obvious damage, loose parts, or debris.
-        </span>
+            Visually inspect the exterior, checking for any obvious damage, loose parts, or debris.
+          </span>
         </div>
         <div class="form-group">
           <label><input type="checkbox" name="checkLights" value="checked"> Lights Checked</label>
           <span style="font-weight: normal; font-size: 0.85em; color: #555;">
-          Confirm that all exterior lights (headlights, tail lights, indicators) are functioning correctly.
-        </span>
+            Confirm that all exterior lights (headlights, tail lights, indicators) are functioning correctly.
+          </span>
         </div>
         <div class="form-group">
           <label><input type="checkbox" name="dashLightsWorkingDaily" value="checked"> Dash Lights Checked</label>
           <span style="font-weight: normal; font-size: 0.85em; color: #555;">
-          Ensure the instrument panel lights are working and clearly visible.
-        </span>
+            Ensure the instrument panel lights are working and clearly visible.
+          </span>
         </div>
         <div class="form-group">
           <label><input type="checkbox" name="checkFluidLevels" value="checked"> Fluid Levels Checked</label>
           <span style="font-weight: normal; font-size: 0.85em; color: #555;">
-          Check engine oil, coolant, and other fluids for proper levels.
-        </span>
+            Check engine oil, coolant, and other fluids for proper levels.
+          </span>
         </div>
         <div class="form-group">
           <label><input type="checkbox" name="checkTyres" value="checked"> Tyres Checked</label>
           <span style="font-weight: normal; font-size: 0.85em; color: #555;">
-          Inspect tyres for tread depth, damage to side walls, proper inflation and check that wheel nuts are secure.
-        </span>
+            Inspect tyres for tread depth, damage to side walls, proper inflation and check that wheel nuts are secure.
+          </span>
         </div>
         <div class="form-group">
           <label><input type="checkbox" name="checkBrakes" value="checked"> Brakes Checked</label>
           <span style="font-weight: normal; font-size: 0.85em; color: #555;">
-          Test that the brakes are functioning before setting off.
-        </span>
+            Test that the brakes are functioning before setting off.
+          </span>
         </div>
         <div class="form-group">
           <label>Fault or Damage?</label>
@@ -351,7 +417,7 @@
         </div>
         <div class="form-group hidden" id="dailyFaultDescriptionContainer">
           <label for="dailyFaultDescription">Please describe the fault/damage:</label>
-          <input type="text" id="dailyFaultDescription" name="dailyFaultDescription">
+          <input type="text" id="dailyFaultDescription" name="dailyFaultDescription" disabled>
         </div>
         <div class="form-group">
           <label for="dailyNotes">Other Notes and Comments:</label>
@@ -361,7 +427,7 @@
       
       <!-- Step 2b: Weekly Check Fields (for Weekly branch) -->
       <div class="step hidden" id="weeklyStep">
-       <div class="form-group">
+        <div class="form-group">
           <label>Tyre Pressure (psi):</label>
           <p style="font-size: 0.9em; color: #555; margin: -2px 0 10px;">Orientation is from the perspective of driving the vehicle.</p>
           <p id="tyrePressureNote" style="font-size: 0.9em; color: #333; font-weight: bold;"></p>
@@ -401,7 +467,7 @@
           </select>
           <div class="form-group hidden" id="tyreConditionOtherContainer">
             <label for="tyreConditionOtherDetails">Please describe the damage:</label>
-            <input type="text" id="tyreConditionOtherDetails" name="tyreConditionOtherDetails">
+            <input type="text" id="tyreConditionOtherDetails" name="tyreConditionOtherDetails" disabled>
           </div>
         </div>
         <div class="form-group">
@@ -423,7 +489,7 @@
         <div class="form-group">
           <label for="bodyworkGlassAndMirrors">Bodywork, Glass and Mirrors:</label>
           <p style="font-size: 0.9em; color: #555; margin: 1px 0 10px;">Includes windscreen, mirrors, lights, and doors.</p>
-          <select id="bodyworkGlassAndMirrors" name="bodyworkGlassAndMirrors" required>
+          <select id="bodyworkGlassAndMirrors" name="bodyworkGlassAndMirrors" required onchange="toggleBodyworkOther()">
             <option value="">Select Condition</option>
             <option value="Good">No visible damage</option>
             <option value="Okay">Minor scratches/chips</option>
@@ -431,7 +497,7 @@
           </select>
           <div class="form-group hidden" id="bodyworkOtherContainer">
             <label for="bodyworkOtherDetails">Please describe the damage:</label>
-            <input type="text" id="bodyworkOtherDetails" name="bodyworkOtherDetails">
+            <input type="text" id="bodyworkOtherDetails" name="bodyworkOtherDetails" disabled>
           </div>
         </div>
         <div class="form-group">
@@ -495,7 +561,7 @@
         </div>
         <div class="form-group hidden" id="weeklyFaultDescriptionContainer">
           <label for="weeklyFaultDescription">Please describe the fault/damage:</label>
-          <input type="text" id="weeklyFaultDescription" name="weeklyFaultDescription">
+          <input type="text" id="weeklyFaultDescription" name="weeklyFaultDescription" disabled>
         </div>
         <div class="form-group">
           <label for="weeklyNotes">Other Notes and Comments:</label>
@@ -552,6 +618,265 @@
     </div>
   </div>
   
+      <!-- ======================= -->
+    <!-- BREAKDOWNS SECTION      -->
+    <!-- ======================= -->
+    <div id="breakdownsSection" class="container hidden">
+      <!-- Back to Home Button -->
+      <div style="margin-bottom: 20px;">
+        <button id="btnBackToHomeFromBreakdowns"
+                style="background:none; border:none; color:#f7941d; font-size:16px; cursor:pointer;">
+          &larr; Back to Home
+        </button>
+      </div>
+
+      <!-- Header (logo/title) -->
+      <div class="header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+        <h2>Vehicle Breakdowns</h2>
+        <img src="logo.png" alt="Logo" class="logo" style="max-height: 35px; margin-left: 20px;">
+      </div>
+
+      <!-- Sub-navigation: Report vs. Update -->
+      <div id="breakdownNav" style="text-align: center; margin-bottom: 20px;">
+        <button id="btnReportBreakdown">Report a New Breakdown</button>
+        <button id="btnUpdateBreakdown">Update or Resolve a Breakdown</button>
+      </div>
+
+      <!-- 1) REPORT A BREAKDOWN FORM -->
+      <form id="formReportBreakdown" class="hidden">
+        <div class="form-group">
+          <label>Breakdown Date:</label>
+          <div class="date-time-group">
+            <input type="date" id="breakdownDate" name="breakdownDate" required />
+            <input type="time" id="breakdownTime" name="breakdownTime" required />
+          </div>
+        </div>
+
+        <!-- “Form Filled In By” as inline radios -->
+        <div class="form-group" style="display: flex; gap: 20px; align-items: center;">
+          <label style="margin-right: 10px; font-weight: bold;">Breakdown Form Filled in By</label>
+          <label style="font-weight: normal; display: flex; align-items: center;">
+            <input type="radio" name="filledBy" value="Office" required />
+            <span style="margin-left: 4px;">Office</span>
+          </label>
+          <label style="font-weight: normal; display: flex; align-items: center;">
+            <input type="radio" name="filledBy" value="Driver" />
+            <span style="margin-left: 4px;">Driver</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label for="breakDriverName">Driver Name:</label>
+          <select id="breakDriverName" name="breakDriverName" required>
+            <option value="">Select Driver Name</option>
+            <option value="Mat Roberts">Mat Roberts</option>
+            <option value="Leo Baptiste">Leo Baptiste</option>
+            <option value="Ed Sykes">Ed Sykes</option>
+            <option value="Stewart Kenny">Stewart Kenny</option>
+            <option value="Frank Libal">Frank Libal</option>
+            <option value="Chris Bull">Chris Bull</option>
+            <option value="Julia Stockdale">Julia Stockdale</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="breakVehicleRegMake">Vehicle Registration &amp; Make:</label>
+          <select id="breakVehicleRegMake" name="breakVehicleRegMake" required>
+            <option value="">Select Registration &amp; Make</option>
+            <option value="BV72 JVN">BV72 JVN - Black Renault Master</option>
+            <option value="SN71 AZG">SN71 AZG - Grey Nissan Luton</option>
+            <option value="PY25 CKL">PY25 CKL - White Maxus (new)</option>
+            <option value="LO19 CGE">LO19 CGE - Black Citroen Relay</option>
+            <option value="PY24 LZE">PY24 LZE - White Maxus</option>
+            <option value="Rental Van">Rental Van</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Are you in a safe place?</label>
+          <label><input type="radio" name="safePlace" value="Yes" required /> Yes</label>
+          <label><input type="radio" name="safePlace" value="No" /> No</label>
+          <div id="safePlaceWarning" class="hidden">
+            Call the office immediately on <strong>01228 521 231</strong> or Chris on <strong>07779 120 063</strong>.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="breakLocation">Location (or What3Words):</label>
+          <input
+            type="text"
+            id="breakLocation"
+            name="breakLocation"
+            placeholder="e.g. ///apple.banana.orange"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="breakDescription">Describe the Issue:</label>
+          <textarea
+            id="breakDescription"
+            name="breakDescription"
+            rows="3"
+            required
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Have our insurers been contacted to arrange recovery?</label>
+           <label><input type="radio" name="aaContacted" value="Yes" required /> Yes</label>
+          <label><input type="radio" name="aaContacted" value="No"/> No</label>
+          <!-- Warning shown only if “No” is selected -->
+          <div id="aaNoWarning" class="hidden" style="margin-top: 10px; padding: 10px; 
+               background-color: #ffe5e5; border: 1px solid #ffcccc; border-radius: 4px; 
+               font-size: 0.9em; color: #a94442;">
+            Please call Aviva Insurance on <strong>0800 246 876</strong> to arrange recovery. Refer to the breakdowns sheet in the van for the policy reference number.
+          </div>
+        </div>
+
+        <div class="form-group hidden" id="aaEtaGroup">
+          <label for="aaEta">What is the recovery ETA (if known)?</label>
+          <input type="text" id="aaEta" name="aaEta" placeholder="e.g. 15:30" disabled />
+        </div>
+
+        <div class="form-group">
+            <label>Has the office been called?</label>
+            <label><input type="radio" name="officeCalled" value="Yes" required /> Yes</label>
+            <label><input type="radio" name="officeCalled" value="No" /> No</label>
+          </div>
+
+          <div class="form-group hidden" id="colleagueSpokenContainer">
+            <label for="colleagueSpoken">Colleague Spoken To:</label>
+            <input type="text" id="colleagueSpoken" name="colleagueSpoken" disabled />
+          </div>
+
+          <div class="form-group">
+            <label>Are there client items on the van?</label>
+            <label><input type="radio" name="clientItems" value="Yes" required /> Yes</label>
+            <label><input type="radio" name="clientItems" value="No" /> No</label>
+          </div>
+
+          <div class="form-group hidden" id="clientItemValueContainer">
+            <label for="clientItemValue">Total value of items:</label>
+            <input type="text" id="clientItemValue" name="clientItemValue" disabled />
+          </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+          <button type="submit">Submit Breakdown</button>
+        </div>
+      </form>
+
+      <!-- 2) UPDATE / RESOLVE A BREAKDOWN FORM -->
+      <form id="formUpdateBreakdown" class="hidden">
+        <input type="hidden" id="resolved" name="resolved" value="No" />
+        <!-- New: First field – two inline radio buttons, only one at a time -->
+        <div class="form-group" style="display: flex; gap: 20px; align-items: center;">
+          <label style="margin-right: 10px; font-weight: bold;">Choose Type:</label>
+          <label style="font-weight: normal; display: flex; align-items: center;">
+              <!-- … just above the “Choose Type” radios or anywhere in the form: -->
+            <input type="radio" name="updType" value="Breakdown Update" required />
+            <span style="margin-left: 4px;">Breakdown Update</span>
+          </label>
+          <label style="font-weight: normal; display: flex; align-items: center;">
+            <input type="radio" name="updType" value="Resolve a Breakdown" />
+            <span style="margin-left: 4px;">Resolve a Breakdown</span>
+          </label>
+        </div>
+
+        <!-- 2) Breakdown Reference (if known) -->
+        <div class="form-group">
+          <label for="breakdownReference">Breakdown Reference Number (if known):</label>
+          <input
+            type="text"
+            id="breakdownReference"
+            name="breakdownReference"
+            placeholder="e.g. BRK-20250604-001"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Update Date:</label>
+          <div class="date-time-group">
+            <input type="date" id="updateDate" name="updateDate" required />
+            <input type="time" id="updateTime" name="updateTime" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="updDriverName">Driver Name:</label>
+          <select id="updDriverName" name="updDriverName" required>
+            <option value="">Select Driver Name</option>
+            <option value="Mat Roberts">Mat Roberts</option>
+            <option value="Leo Baptiste">Leo Baptiste</option>
+            <option value="Ed Sykes">Ed Sykes</option>
+            <option value="Stewart Kenny">Stewart Kenny</option>
+            <option value="Frank Libal">Frank Libal</option>
+            <option value="Chris Bull">Chris Bull</option>
+            <option value="Julia Stockdale">Julia Stockdale</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="updVehicleRegMake">Vehicle Registration &amp; Make:</label>
+          <select id="updVehicleRegMake" name="updVehicleRegMake" required>
+            <option value="">Select Registration &amp; Make</option>
+            <option value="BV72 JVN">BV72 JVN - Black Renault Master</option>
+            <option value="SN71 AZG">SN71 AZG - Grey Nissan Luton</option>
+            <option value="PY25 CKL">PY25 CKL - White Maxus (new)</option>
+            <option value="LO19 CGE">LO19 CGE - Black Citroen Relay</option>
+            <option value="PY24 LZE">PY24 LZE - White Maxus</option>
+            <option value="Rental Van">Rental Van</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="updaterName">Name of Person Giving Update:</label>
+          <input type="text" id="updaterName" name="updaterName" required />
+        </div>
+
+        <div class="form-group">
+          <label for="resolveMethod">Update Description</label>
+          <textarea
+            id="resolveMethod"
+            name="resolveMethod"
+            rows="2"
+            placeholder="e.g. AA tow to garage, replaced tyre, etc."
+            required
+          ></textarea>
+        </div>
+
+        <!-- “Is the van back in use?” radios -->
+        <div class="form-group">
+          <label>Is the van back in use?</label>
+          <label><input type="radio" name="vanInUse" value="Yes" required /> Yes</label>
+          <label style="margin-left: 0px;"><input type="radio" name="vanInUse" value="No" /> No</label>
+        </div>
+
+        <div class="form-group hidden" id="artworksGroup">
+          <label>If needed, have client items been collected?</label>
+          <label><input type="radio" name="artworksCollected" value="Yes" /> Yes</label>
+          <label style="margin-left: 0px;"><input type="radio" name="artworksCollected" value="No" /> No</label>
+          <label style="margin-left: 0px;"><input type="radio" name="artworksCollected" value="n/a" /> n/a</label>
+          <!-- Warning shown only if “No” is selected -->
+          <div id="clientItemsWarning" class="hidden" style="margin-top:10px; padding:10px; background-color:#ffe5e5; border:1px solid #ffcccc; border-radius:4px; font-size:0.9em; color:#a94442;">
+            Please call the office on <strong>01228 521 231</strong> to arrange collection of these items.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Is the van coming back to Carlisle?</label>
+          <label><input type="radio" name="comingToCarlisle" value="Yes" required /> Yes</label>
+          <label><input type="radio" name="comingToCarlisle" value="No" /> No</label>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+          <button type="submit">Update Breakdown</button>
+        </div>
+      </form>
+    </div>
+
   <!-- FAQ Modal -->
   <div id="faqModal" class="modal hidden">
     <div class="modal-content">
@@ -603,8 +928,7 @@
     const captureStatus = document.getElementById('captureStatus');
 
     // Helper function to validate required fields for the current step.
-    // Skips hidden, disabled fields as well as the "other notes and comments" fields and file inputs.
-   function validateStep(stepElement) {
+    function validateStep(stepElement) {
       let valid = true;
       const radioValidated = new Set();
       const inputs = stepElement.querySelectorAll("input, select, textarea");
@@ -705,7 +1029,6 @@
       }
       adjustSteps();
       buildStepsArray();
-      console.log("Initial branch set to: " + document.getElementById("checkType").value);
     }
     
     // Set check type based on user selection
@@ -713,7 +1036,6 @@
       document.getElementById("checkType").value = type;
       adjustSteps();
       buildStepsArray();
-      console.log("Branch changed to: " + type);
     }
     
     // Toggle common fields based on branch
@@ -739,17 +1061,13 @@
     function adjustSteps() {
       const checkType = document.getElementById("checkType").value;
       if (checkType === "Weekly") {
-        // Hide and disable the daily step so its values won't be submitted
         document.getElementById("dailyStep").classList.add("hidden");
         disableInputsForStep("dailyStep", true);
-        // Show and enable the weekly step
         document.getElementById("weeklyStep").classList.remove("hidden");
         disableInputsForStep("weeklyStep", false);
       } else if (checkType === "Daily") {
-        // Show and enable the daily step
         document.getElementById("dailyStep").classList.remove("hidden");
         disableInputsForStep("dailyStep", false);
-        // Hide and disable the weekly step so its values won't be submitted
         document.getElementById("weeklyStep").classList.add("hidden");
         disableInputsForStep("weeklyStep", true);
       }
@@ -766,7 +1084,6 @@
       });
       currentStep = 0;
       showStep(currentStep);
-      console.log("Steps built. Total visible steps: " + steps.length);
     }
     
     // Display a specific step
@@ -780,49 +1097,50 @@
       if (steps[index].id === "reviewStep") {
         updateReviewPreviews();
       }
-      console.log("Showing step: " + (index + 1));
     }
     
-    // Navigation button event listeners setup
     document.addEventListener("DOMContentLoaded", function() {
-      // Attach fault option event listeners
+      // Vehicle Checks: fault option listeners
       document.querySelectorAll('input[name="dailyFaultOption"]').forEach(radio => {
         radio.addEventListener("change", event => {
           const container = document.getElementById("dailyFaultDescriptionContainer");
+          const input = document.getElementById("dailyFaultDescription");
           if (event.target.value === "Yes") {
             container.classList.remove("hidden");
-            container.querySelector("input").disabled = false;
+            input.disabled = false;
           } else {
             container.classList.add("hidden");
-            container.querySelector("input").disabled = true;
+            input.disabled = true;
+            input.value = "";
           }
         });
       });
       document.querySelectorAll('input[name="weeklyFaultOption"]').forEach(radio => {
         radio.addEventListener("change", event => {
           const container = document.getElementById("weeklyFaultDescriptionContainer");
+          const input = document.getElementById("weeklyFaultDescription");
           if (event.target.value === "Yes") {
             container.classList.remove("hidden");
-            container.querySelector("input").disabled = false;
+            input.disabled = false;
           } else {
             container.classList.add("hidden");
-            container.querySelector("input").disabled = true;
+            input.disabled = true;
+            input.value = "";
           }
         });
       });
       
-      // Attach change events for vehicle registration and other fields
+      // Vehicle Checks: other dynamic fields
       document.getElementById("vehicleReg").addEventListener("change", updateTyrePressureNote);
       updateTyrePressureNote();
       document.getElementById("tyreConditionVisual").addEventListener("change", toggleTyreConditionOther);
-      toggleTyreConditionOther();
       document.getElementById("bodyworkGlassAndMirrors").addEventListener("change", toggleBodyworkOther);
+      toggleTyreConditionOther();
       toggleBodyworkOther();
       
-      // Replace the existing Next button event listener with the updated version below:
+      // Next button for Vehicle Checks
       document.getElementById("nextBtn").addEventListener('click', () => {
         const currentStepElement = steps[currentStep];
-        // Validate the current step; if validation fails, alert and do not proceed.
         if (!validateStep(currentStepElement)) {
           alert("Please fill in all required fields before moving on.");
           return;
@@ -835,7 +1153,7 @@
         }
       });
       
-      // Attach Back button event listener
+      // Back button for Vehicle Checks
       document.getElementById("backBtn").addEventListener('click', () => {
         if (currentStep > 0) {
           currentStep--;
@@ -843,7 +1161,7 @@
         }
       });
       
-      // Attach image upload event listeners
+      // Image upload handlers
       document.getElementById('uploadDeviceBtn').addEventListener('click', () => {
         document.getElementById('galleryUpload').click();
       });
@@ -854,7 +1172,7 @@
         this.value = "";
       });
       
-      // Attach camera modal event listeners
+      // Camera modal handlers
       document.getElementById('openCameraBtn').addEventListener('click', async () => {
         try {
           stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
@@ -884,7 +1202,7 @@
         }, 'image/jpeg');
       });
       
-      // Finally, initialize branch and build steps
+      // Initialize Vehicle Checks branch
       initBranch();
     });
     
@@ -892,24 +1210,28 @@
     function toggleDriverOther() {
       const driverSelect = document.getElementById("driverName");
       const otherContainer = document.getElementById("otherDriverNameContainer");
+      const input = document.getElementById("otherDriverName");
       if (driverSelect.value === "Other") {
         otherContainer.classList.remove("hidden");
-        otherContainer.querySelector("input").disabled = false;
+        input.disabled = false;
       } else {
         otherContainer.classList.add("hidden");
-        otherContainer.querySelector("input").disabled = true;
+        input.disabled = true;
+        input.value = "";
       }
     }
 
     function toggleVanOther() {
-      const driverSelect = document.getElementById("vehicleReg");
+      const vehicleSelect = document.getElementById("vehicleReg");
       const otherContainer = document.getElementById("rentalVanContainer");
-      if (driverSelect.value === "Rental Van") {
+      const input = document.getElementById("rentalVanName");
+      if (vehicleSelect.value === "Rental Van") {
         otherContainer.classList.remove("hidden");
-        otherContainer.querySelector("input").disabled = false;
+        input.disabled = false;
       } else {
         otherContainer.classList.add("hidden");
-        otherContainer.querySelector("input").disabled = true;
+        input.disabled = true;
+        input.value = "";
       }
     }
     
@@ -1116,5 +1438,253 @@
         });
     }
   </script>
+
+  <script>
+  // ================================
+  // Landing‐Page and Section Toggles
+  // ================================
+  document.addEventListener("DOMContentLoaded", function() {
+    const landing = document.getElementById("landingPage");
+    const vehicleSection = document.getElementById("vehicleChecksSection");
+    const breakdownSection = document.getElementById("breakdownsSection");
+
+    // Show Vehicle Checks when clicked
+    document.getElementById("btnVehicleChecks").addEventListener("click", function() {
+      landing.classList.add("hidden");
+      vehicleSection.classList.remove("hidden");
+    });
+
+    // Show Breakdowns when clicked
+    document.getElementById("btnBreakdowns").addEventListener("click", function() {
+      landing.classList.add("hidden");
+      breakdownSection.classList.remove("hidden");
+    });
+
+    // Back to Home from Vehicle Checks
+    document.getElementById("btnBackToHomeFromVehicle").addEventListener("click", function() {
+      vehicleSection.classList.add("hidden");
+      landing.classList.remove("hidden");
+    });
+
+    // Back to Home from Breakdowns
+    document.getElementById("btnBackToHomeFromBreakdowns").addEventListener("click", function() {
+      breakdownSection.classList.add("hidden");
+      landing.classList.remove("hidden");
+    });
+  });
+
+  // ================================
+  // Breakdowns‐Section Script Logic
+  // ================================
+  const BREAKDOWN_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwo7bTxPs082xSimCVT4QFjaXsoGgmO3slr7YfNRzCbHG5eFhbe4fl_4cX4K4wd9fnx/exec";
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const btnReportBreakdown = document.getElementById("btnReportBreakdown");
+    const btnUpdateBreakdown = document.getElementById("btnUpdateBreakdown");
+    const formReportBreakdown = document.getElementById("formReportBreakdown");
+    const formUpdateBreakdown = document.getElementById("formUpdateBreakdown");
+
+    // ── ** MISSING DECLARATIONS (insert these two lines) **
+    const updTypeRadios   = document.getElementsByName("updType");
+    const resolvedInput   = document.getElementById("resolved");
+    // ─────────────────────────────────────────────────────────
+
+    // If “Resolve a Breakdown” is selected, set resolved="Yes". Otherwise "No".
+    updTypeRadios.forEach(radio => {
+      radio.addEventListener("change", () => {
+        if (radio.value === "Resolve a Breakdown" && radio.checked) {
+          resolvedInput.value = "Yes";
+        } else if (radio.value === "Breakdown Update" && radio.checked) {
+          resolvedInput.value = "No";
+        }
+      });
+    });
+
+    // Toggle which sub‐form is visible and style active button
+    function showReportForm() {
+      btnReportBreakdown.classList.add("active");
+      btnUpdateBreakdown.classList.remove("active");
+      formReportBreakdown.classList.remove("hidden");
+      formUpdateBreakdown.classList.add("hidden");
+    }
+    function showUpdateForm() {
+      btnUpdateBreakdown.classList.add("active");
+      btnReportBreakdown.classList.remove("active");
+      formUpdateBreakdown.classList.remove("hidden");
+      formReportBreakdown.classList.add("hidden");
+    }
+
+    btnReportBreakdown.addEventListener("click", showReportForm);
+    btnUpdateBreakdown.addEventListener("click", showUpdateForm);
+    // Default to “Report” on first load
+    showReportForm();
+
+    // Back to Home button in Breakdown section
+    document.getElementById("btnBackToHomeFromBreakdowns").addEventListener("click", () => {
+      document.getElementById("breakdownsSection").classList.add("hidden");
+      document.getElementById("landingPage").classList.remove("hidden");
+    });
+
+    // Safe‐place warning logic
+    const safeRadios = document.getElementsByName("safePlace");
+    const safeWarning = document.getElementById("safePlaceWarning");
+    safeRadios.forEach(radio => {
+      radio.addEventListener("change", () => {
+        if (radio.value === "No" && radio.checked) {
+          safeWarning.classList.remove("hidden");
+        } else if (radio.value === "Yes" && radio.checked) {
+          safeWarning.classList.add("hidden");
+        }
+      });
+    });
+
+    // ── “AA Contacted?” logic → show/hide ETA _and_ show/hide Aviva warning
+    const aaRadios    = document.getElementsByName("aaContacted");
+    const aaEtaGroup  = document.getElementById("aaEtaGroup");
+    const aaNoWarning = document.getElementById("aaNoWarning");
+    aaRadios.forEach(radio => {
+      radio.addEventListener("change", () => {
+        const etaInput = document.getElementById("aaEta");
+        if (radio.value === "Yes" && radio.checked) {
+          aaEtaGroup.classList.remove("hidden");
+          etaInput.disabled = false;
+          aaNoWarning.classList.add("hidden");
+        }
+        else if (radio.value === "No" && radio.checked) {
+          aaEtaGroup.classList.add("hidden");
+          etaInput.disabled = true;
+          etaInput.value = "";
+          aaNoWarning.classList.remove("hidden");
+        }
+      });
+    });
+
+    // “Has the office been called?” logic
+    const officeRadios = document.getElementsByName("officeCalled");
+    const colleagueContainer = document.getElementById("colleagueSpokenContainer");
+    const colleagueInput     = document.getElementById("colleagueSpoken");
+    officeRadios.forEach(radio => {
+      radio.addEventListener("change", () => {
+        if (radio.value === "Yes" && radio.checked) {
+          colleagueContainer.classList.remove("hidden");
+          colleagueInput.disabled = false;
+        } else if (radio.value === "No" && radio.checked) {
+          colleagueContainer.classList.add("hidden");
+          colleagueInput.disabled = true;
+          colleagueInput.value = "";
+        }
+      });
+    });
+
+    // ── “Client items on van?” logic
+    const clientItemsOnVanRadios   = document.getElementsByName("clientItems");
+    const clientItemValueContainer = document.getElementById("clientItemValueContainer");
+    const clientItemValueInput     = document.getElementById("clientItemValue");
+    clientItemsOnVanRadios.forEach(radio => {
+      radio.addEventListener("change", () => {
+        if (radio.value === "Yes" && radio.checked) {
+          clientItemValueContainer.classList.remove("hidden");
+          clientItemValueInput.disabled = false;
+        } else if (radio.value === "No" && radio.checked) {
+          clientItemValueContainer.classList.add("hidden");
+          clientItemValueInput.disabled = true;
+          clientItemValueInput.value = "";
+        }
+      });
+    });
+
+    // ── “Van back in use?” logic → show/hide “client items collected”
+    const vanInUseRadios = document.getElementsByName("vanInUse");
+    const artworksGroup  = document.getElementById("artworksGroup");
+    vanInUseRadios.forEach(radio => {
+      radio.addEventListener("change", () => {
+        if (radio.value === "No" && radio.checked) {
+          artworksGroup.classList.remove("hidden");
+        } else if (radio.value === "Yes" && radio.checked) {
+          artworksGroup.classList.add("hidden");
+          document.querySelectorAll('input[name="artworksCollected"]').forEach(i => i.checked = false);
+        }
+      });
+    });
+
+    // ── “Artworks collected?” logic → show/hide client‐items warning
+    const artworksCollectedRadios = document.getElementsByName("artworksCollected");
+    const clientItemsWarning      = document.getElementById("clientItemsWarning");
+    artworksCollectedRadios.forEach(radio => {
+      radio.addEventListener("change", () => {
+        if (radio.value === "No" && radio.checked) {
+          clientItemsWarning.classList.remove("hidden");
+        } else if (radio.value === "Yes" && radio.checked) {
+          clientItemsWarning.classList.add("hidden");
+        }
+      });
+    });
+     
+    formReportBreakdown.addEventListener("submit", e => {
+      e.preventDefault();
+
+      // 1) Grab the <button type="submit"> inside this form:
+      const btn = formReportBreakdown.querySelector('button[type="submit"]');
+      // 2) Disable it and change its text:
+      btn.disabled = true;
+      btn.textContent = "Submitting…";
+
+      fetch(BREAKDOWN_WEBAPP_URL, {
+        method: "POST",
+        body: new FormData(formReportBreakdown)
+      })
+      .then(resp => resp.json())
+      .then(json => {
+        btn.disabled = false;
+        btn.textContent = "Submit Breakdown"; // revert to original
+        if (json.result === "success") {
+          alert("Breakdown reported successfully!\nReference ID: " + json.referenceID);
+          formReportBreakdown.reset();
+          showReportForm();
+        } else {
+          alert("Error: " + json.message);
+        }
+      })
+      .catch(err => {
+        btn.disabled = false;
+        btn.textContent = "Submit Breakdown";
+        console.error("Fetch error:", err);
+        alert("Submission failed. Please try again.");
+      });
+    });
+
+    formUpdateBreakdown.addEventListener("submit", e => {
+      e.preventDefault();
+
+      // Grab the Update form’s submit button:
+      const btn = formUpdateBreakdown.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.textContent = "Submitting…";
+
+      fetch(BREAKDOWN_WEBAPP_URL, {
+        method: "POST",
+        body: new FormData(formUpdateBreakdown)
+      })
+      .then(resp => resp.json())
+      .then(json => {
+        btn.disabled = false;
+        btn.textContent = "Update Breakdown"; // revert 
+        if (json.result === "success") {
+          alert("Breakdown updated successfully!");
+          formUpdateBreakdown.reset();
+          showUpdateForm();
+        } else {
+          alert("Error: " + json.message);
+        }
+      })
+      .catch(err => {
+        btn.disabled = false;
+        btn.textContent = "Update Breakdown";
+        console.error("Fetch error:", err);
+        alert("Update failed. Please try again.");
+      });
+    });
+   }); 
+</script>
 </body>
 </html>
